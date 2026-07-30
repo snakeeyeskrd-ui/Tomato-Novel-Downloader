@@ -21,7 +21,7 @@ pub(crate) async fn api_app_update() -> Result<Json<Value>, StatusCode> {
             "current_tag": current_tag,
             "latest_tag": current_tag,
             "latest_name": "Docker build",
-            "latest_body": "Docker 构建已禁用程序自更新，请通过重新拉取镜像进行升级。",
+            "latest_body": "В Docker-сборке самообновление отключено. Обновите, заново загрузив образ.",
             "latest_url": Value::Null,
             "published_at": Value::Null,
             "has_update": false,
@@ -88,25 +88,25 @@ pub(crate) async fn api_self_update(
     });
 
     thread::spawn(move || {
-        store.set(SelfUpdateState::Running, "check", 8, "检查最新版本…");
+        store.set(SelfUpdateState::Running, "check", 8, "Проверка последней версии…");
         thread::sleep(Duration::from_millis(150));
-        store.set(SelfUpdateState::Running, "download", 18, "开始下载更新包…");
+        store.set(SelfUpdateState::Running, "download", 18, "Загрузка пакета обновления…");
 
         let result = crate::base_system::self_update::check_for_updates(VERSION, true);
 
         let _ = stop_tx.send(());
         match result {
             Ok(SelfUpdateOutcome::UpToDate) => {
-                store.finish_done("done", "已是最新版本，无需更新");
+                store.finish_done("done", "Уже установлена последняя версия");
             }
             Ok(SelfUpdateOutcome::Skipped) => {
-                store.finish_done("skipped", "已跳过更新");
+                store.finish_done("skipped", "Обновление пропущено");
             }
             Ok(SelfUpdateOutcome::UpdateLaunched) => {
-                store.finish_done("restart", "更新已完成，服务正在重启");
+                store.finish_done("restart", "Обновление завершено, сервис перезапускается");
             }
             Err(e) => {
-                store.finish_failed("failed", format!("自更新失败: {e}"));
+                store.finish_failed("failed", format!("Ошибка самообновления: {e}"));
             }
         }
     });

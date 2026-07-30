@@ -8,10 +8,10 @@ pub(crate) const APP_FAVICON_ICO: &[u8] = include_bytes!("../../../img/Tomato-do
 #[cfg(feature = "official-api")]
 pub(crate) const FREE_NOTICE_HTML: &str = concat!(
     r#"<div class="free-notice">"#,
-    "本程序完全免费 &middot; ",
+    "Эта программа полностью бесплатна &middot; ",
     r#"<a href="https://github.com/zhongbai2333/Tomato-Novel-Downloader" "#,
-    r#"target="_blank" rel="noopener">开源仓库</a><br />"#,
-    "若发现收费渠道，请勿上当受骗！",
+    r#"target="_blank" rel="noopener">Репозиторий</a><br />"#,
+    "Если вам предлагают платную версию — это мошенничество!",
     "</div>",
 );
 
@@ -22,10 +22,10 @@ pub(crate) const FREE_NOTICE_HTML: &str = "";
 #[cfg(feature = "official-api")]
 pub(crate) const FREE_NOTICE_MOBILE_HTML: &str = concat!(
     r#"<div class="free-notice free-notice-mobile">"#,
-    "本程序完全免费 &middot; ",
+    "Эта программа полностью бесплатна &middot; ",
     r#"<a href="https://github.com/zhongbai2333/Tomato-Novel-Downloader" "#,
-    r#"target="_blank" rel="noopener">开源仓库</a><br />"#,
-    "若发现收费渠道，请勿上当受骗！",
+    r#"target="_blank" rel="noopener">Репозиторий</a><br />"#,
+    "Если вам предлагают платную версию — это мошенничество!",
     "</div>",
 );
 

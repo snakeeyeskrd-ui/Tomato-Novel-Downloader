@@ -158,12 +158,12 @@ pub(crate) async fn api_preview(
         .map_err(|_| {
             api_error(
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "解析 book_id 任务执行失败",
+                "Ошибка разбора book_id",
             )
         })?
-        .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "无法解析 book_id"))?;
+        .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Не удалось разобрать book_id"))?;
     if book_id.is_empty() {
-        return Err(api_error(StatusCode::BAD_REQUEST, "book_id 为空"));
+        return Err(api_error(StatusCode::BAD_REQUEST, "book_id пуст"));
     }
 
     // 并发限制：与 search 共用同一个信号量，最多 2 个上游 API 请求并发。
@@ -172,7 +172,7 @@ pub(crate) async fn api_preview(
         .api_semaphore
         .acquire()
         .await
-        .map_err(|_| api_error(StatusCode::SERVICE_UNAVAILABLE, "上游 API 并发限制已关闭"))?;
+        .map_err(|_| api_error(StatusCode::SERVICE_UNAVAILABLE, "Лимит параллельных запросов к API закрыт"))?;
 
     let cfg = state
         .config
@@ -186,8 +186,8 @@ pub(crate) async fn api_preview(
         dl::prepare_download_plan(&cfg_for_plan, &book_id_for_plan, dl::BookMeta::default())
     })
     .await
-    .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "预览任务执行失败"))?
-    .map_err(|err| api_error(StatusCode::BAD_GATEWAY, format!("加载目录失败: {err}")))?;
+    .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "Ошибка предпросмотра"))?
+    .map_err(|err| api_error(StatusCode::BAD_GATEWAY, format!("Не удалось загрузить оглавление: {err}")))?;
 
     let meta = &plan.meta;
     let chapter_count = plan.chapters.len();
@@ -203,7 +203,7 @@ pub(crate) async fn api_preview(
         )
     })
     .await
-    .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "封面缓存任务执行失败"))?;
+    .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "Ошибка кэширования обложки"))?;
 
     let local_cover_url = cover_key
         .map(|k| format!("/api/preview-cover/{k}"))
