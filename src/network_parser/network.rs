@@ -171,13 +171,13 @@ impl FanqieWebNetwork {
         {
             Ok(resp) => {
                 if resp.status().as_u16() == 404 {
-                    error!("小说ID {} 不存在！", book_id);
+                    error!("ID романа {} не существует!", book_id);
                     return (None, None, None, None, None, None, None, None, None);
                 }
                 let resp = match resp.error_for_status() {
                     Ok(r) => r,
                     Err(e) => {
-                        error!("获取书籍信息失败: {}", e);
+                        error!("Не удалось получить информацию о книге: {}", e);
                         return (None, None, None, None, None, None, None, None, None);
                     }
                 };
@@ -198,13 +198,13 @@ impl FanqieWebNetwork {
                         )
                     }
                     Err(e) => {
-                        error!("获取书籍信息失败: {}", e);
+                        error!("Не удалось получить информацию о книге: {}", e);
                         (None, None, None, None, None, None, None, None, None)
                     }
                 }
             }
             Err(e) => {
-                error!("获取书籍信息失败: {}", e);
+                error!("Не удалось получить информацию о книге: {}", e);
                 (None, None, None, None, None, None, None, None, None)
             }
         }
@@ -214,7 +214,7 @@ impl FanqieWebNetwork {
     pub(crate) fn fetch_chapter_list(&self, book_id: &str) -> Option<Vec<Value>> {
         // 无效 book_id 直接返回 None，避免无意义请求
         if book_id.trim().is_empty() || !book_id.chars().all(|c| c.is_ascii_digit()) {
-            warn!("fetch_chapter_list 跳过无效 book_id: '{}'", book_id);
+            warn!("fetch_chapter_list: пропуск недействительного book_id: '{}'", book_id);
             return None;
         }
 
@@ -260,7 +260,7 @@ impl FanqieWebNetwork {
                 Ok(r) => r,
                 Err(e) => {
                     last_error = Some(e.to_string());
-                    error!("获取章节列表失败: {}", e);
+                    error!("Не удалось получить список глав: {}", e);
                     self.sleep_backoff(attempt, retries, &mut backoff, 0.3);
                     continue;
                 }
@@ -298,7 +298,7 @@ impl FanqieWebNetwork {
                 Ok(r) => r,
                 Err(e) => {
                     last_error = Some(e.to_string());
-                    error!("获取章节列表失败: {}", e);
+                    error!("Не удалось получить список глав: {}", e);
                     self.sleep_backoff(attempt, retries, &mut backoff, 0.3);
                     continue;
                 }
@@ -308,7 +308,7 @@ impl FanqieWebNetwork {
                 Ok(v) => v,
                 Err(e) => {
                     last_error = Some(e.to_string());
-                    error!("获取章节列表失败: {}", e);
+                    error!("Не удалось получить список глав: {}", e);
                     self.sleep_backoff(attempt, retries, &mut backoff, 0.3);
                     continue;
                 }
@@ -324,7 +324,7 @@ impl FanqieWebNetwork {
             }
 
             last_error = Some("parse chapter list failed".to_string());
-            warn!("获取章节列表失败: 解析章节数组为空");
+            warn!("Не удалось получить список глав: массив глав пуст");
             self.sleep_backoff(attempt, retries, &mut backoff, 0.3);
             continue;
         }

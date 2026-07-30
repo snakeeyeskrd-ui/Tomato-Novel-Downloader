@@ -38,10 +38,23 @@ pub fn output_format_label(choice: &str) -> &'static str {
 }
 
 pub fn output_format_value_from_label(label: &str) -> Option<&'static str> {
-    output_format_choices()
+    let trimmed = label.trim();
+    if let Some(value) = output_format_choices()
         .iter()
-        .find(|(_, candidate)| *candidate == label)
+        .find(|(_, candidate)| *candidate == trimmed)
         .map(|(value, _)| *value)
+    {
+        return Some(value);
+    }
+    // Backward compatibility with pre-translation Chinese labels.
+    match trimmed {
+        "txt 格式" => Some(OUTPUT_FORMAT_TXT),
+        "epub 格式" => Some(OUTPUT_FORMAT_EPUB),
+        "pdf 格式" => Some(OUTPUT_FORMAT_PDF),
+        "散装文件" => Some(OUTPUT_FORMAT_BULK_TXT),
+        "下载后选择" | "下载完后选择" => Some(OUTPUT_FORMAT_ASK_AFTER_DOWNLOAD),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

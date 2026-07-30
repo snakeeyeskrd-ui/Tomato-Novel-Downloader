@@ -201,7 +201,7 @@ pub fn inject_segment_links(
                 open_tag.push_str(&format!(" id=\"p-{}\">", content_idx));
             }
             inner.push_str(&format!(
-                " <a class=\"seg-count\" href=\"{}#para-{}\" title=\"查看本段评论\">({})</a>",
+                " <a class=\"seg-count\" href=\"{}#para-{}\" title=\"Смотреть комментарии к абзацу\">({})</a>",
                 html_escape_attr(comments_file),
                 content_idx,
                 cnt
