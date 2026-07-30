@@ -160,6 +160,14 @@ fn check_for_updates_impl(current_version: &str, auto_yes: bool) -> Result<SelfU
         return Ok(SelfUpdateOutcome::Skipped);
     }
 
+    if cfg!(not(feature = "official-api")) {
+        warn!(
+            target: "self_update",
+            "Сборка без official-api: автообновление отключено, чтобы не заменить локализованный бинарник официальным релизом."
+        );
+        return Ok(SelfUpdateOutcome::Skipped);
+    }
+
     info!(target: "self_update", "Проверка обновлений программы…");
 
     let current_tag = format!("v{current_version}");
