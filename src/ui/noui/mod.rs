@@ -1,6 +1,7 @@
-//! 无 UI（旧 CLI）交互入口。
+//! Точка входа без UI (старый CLI).
 //!
-//! 使用标准输入输出进行交互，并在进入前尽量恢复终端模式。
+//! Взаимодействие через стандартный ввод/вывод; перед входом по возможности
+//! восстанавливается режим терминала.
 
 use std::io::{self, BufRead, Write};
 
@@ -43,25 +44,26 @@ pub fn run(config: &mut Config) -> Result<()> {
     let _ = execute!(out, DisableMouseCapture, LeaveAlternateScreen);
 
     println!(
-        "欢迎使用番茄小说下载器! v{}\n\
-项目地址: https://github.com/zhongbai2333/Tomato-Novel-Downloader \n\
+        "Добро пожаловать в Tomato Novel Downloader! v{}\n\
+Репозиторий: https://github.com/zhongbai2333/Tomato-Novel-Downloader \n\
 Fork From: https://github.com/Dlmily/Tomato-Novel-Downloader-Lite \n\
-作者: zhongbai233 (https://github.com/zhongbai2333) \n\
-项目早期代码: Dlmily (https://github.com/Dlmily) \n\
+Автор: zhongbai233 (https://github.com/zhongbai2333) \n\
+Ранний код проекта: Dlmily (https://github.com/Dlmily) \n\
 \n\
-项目说明: 此项目基于Dlmily的项目Fork而来, 我对其进行重构 + 优化, 添加更对功能, 包括: EPUB下载支持、更好的断点传输、更好的错误管理等特性 \n\
-本项目[完全]基于第三方API, [未]使用官方API, 如有需要可以查看Dlmily的项目 \n\
-本项目仅供网络爬虫技术、网页数据处理及相关研究的学习用途。请勿将其用于任何违反法律法规或侵犯他人权益的活动。",
+О проекте: это форк проекта Dlmily; код переработан и оптимизирован, добавлены возможности, в том числе: поддержка EPUB, улучшенная докачка, улучшенная обработка ошибок и др. \n\
+Проект [полностью] основан на стороннем API и [не] использует официальное API; при необходимости см. проект Dlmily \n\
+Проект предназначен только для изучения технологий веб-скрейпинга, обработки веб-данных и связанных исследований. Не используйте его для любых действий, нарушающих законы или права других лиц.",
         env!("CARGO_PKG_VERSION")
     );
 
     #[cfg(feature = "official-api")]
     println!(
-        "\n【免费声明】本程序完全免费，若发现收费渠道，请勿上当受骗！\n\
-      官方仓库: https://github.com/zhongbai2333/Tomato-Novel-Downloader"
+        "\n【Бесплатно】Программа полностью бесплатна. Если вам предлагают платный доступ — это мошенничество!\n\
+      Официальный репозиторий: https://github.com/zhongbai2333/Tomato-Novel-Downloader"
     );
 
-    // 每次启动检查程序更新（不影响后续流程，失败直接忽略）。
+    // При каждом запуске проверяем обновления программы (не влияет на дальнейший
+    // ход работы; ошибки просто игнорируются).
     app_update::startup_check();
 
     let mut shown_iid_error: Option<String> = None;
@@ -74,7 +76,7 @@ Fork From: https://github.com/Dlmily/Tomato-Novel-Downloader-Lite \n\
         }
 
         let prompt = format!(
-            "旧 CLI 已禁用新建下载；请输入命令（s配置 / h下载历史 / u更新小说 / c检查更新 / U程序自更新 / q退出，默认保存到 {}）：",
+            "Старый CLI больше не поддерживает новые загрузки; введите команду (s — настройки / h — история загрузок / u — обновить новеллу / c — проверить обновления / U — самообновление / q — выход; сохранение по умолчанию: {}):",
             config.default_save_dir().display()
         );
         let input = read_line(&prompt)?;
@@ -83,7 +85,7 @@ Fork From: https://github.com/Dlmily/Tomato-Novel-Downloader-Lite \n\
             continue;
         }
         if text.eq_ignore_ascii_case("q") {
-            println!("已退出。");
+            println!("Выход выполнен.");
             break;
         }
         if text.eq_ignore_ascii_case("s") {
@@ -96,11 +98,11 @@ Fork From: https://github.com/Dlmily/Tomato-Novel-Downloader-Lite \n\
         }
         if text.eq_ignore_ascii_case("u") {
             if let Some(book_id) = update::update_menu(config)? {
-                println!("已选择更新 book_id={}\n", book_id);
-                // 直接进入该书下载流程
+                println!("Выбрано обновление book_id={}\n", book_id);
+                // Сразу переходим к загрузке этой книги
                 match download_book(&book_id, config) {
-                    Ok(()) => println!("下载完成\n"),
-                    Err(err) => println!("下载失败: {}\n", err),
+                    Ok(()) => println!("Загрузка завершена\n"),
+                    Err(err) => println!("Ошибка загрузки: {}\n", err),
                 }
             }
             continue;
@@ -120,7 +122,7 @@ Fork From: https://github.com/Dlmily/Tomato-Novel-Downloader-Lite \n\
         }
 
         println!(
-            "旧 CLI 模式已禁用下载新小说。\n如需新增下载，请使用 TUI 或 Web UI；旧 CLI 仅保留“u”更新本地已有小说。\n"
+            "В режиме старого CLI загрузка новых новелл отключена.\nДля новых загрузок используйте TUI или Web UI; в старом CLI доступна только команда «u» для обновления уже скачанных новелл.\n"
         );
     }
 
