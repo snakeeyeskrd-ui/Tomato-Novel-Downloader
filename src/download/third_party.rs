@@ -43,7 +43,9 @@ pub(crate) fn resolve_api_urls(
         .map(|s| s.as_str())
         .map(normalize_base)
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow!("При use_official_api=false список api_endpoints не может быть пустым"))?;
+        .ok_or_else(|| anyhow!(
+            "Список api_endpoints пуст. Эта сборка без Official-API: укажите сторонние API в Настройках (api_endpoints) или в config.yml. Официальный API в открытый код не входит."
+        ))?;
 
     // 目录接口（网页端）
     let directory_url = if base.contains("/api/") && base.contains("directory") {

@@ -835,7 +835,9 @@ fn download_third_party_flow(
     seg_pool: Option<&SegmentCommentPool>,
 ) -> Result<DownloadResult> {
     if config.api_endpoints.is_empty() {
-        return Err(anyhow!("При use_official_api=false список api_endpoints не может быть пустым"));
+        return Err(anyhow!(
+            "Список api_endpoints пуст. Эта сборка без Official-API: укажите сторонние API в Настройках (api_endpoints) или в config.yml. Официальный API в открытый код не входит."
+        ));
     }
 
     let probe_chapter_id = pending_chapters

@@ -89,6 +89,22 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
+    // Windows console often starts in a legacy code page; UTF-8 is needed for Chinese titles.
+    #[cfg(windows)]
+    {
+        use std::process::Command;
+        let _ = Command::new("cmd").args(["/C", "chcp 65001 >NUL"]).status();
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn SetConsoleOutputCP(w_code_page_id: u32) -> i32;
+            fn SetConsoleCP(w_code_page_id: u32) -> i32;
+        }
+        unsafe {
+            SetConsoleOutputCP(65001);
+            SetConsoleCP(65001);
+        }
+    }
+
     let cli = Cli::parse();
 
     if cli.version {
