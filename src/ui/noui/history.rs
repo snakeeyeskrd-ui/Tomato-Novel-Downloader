@@ -1,4 +1,4 @@
-//! noUI 下载历史查看。
+//! Просмотр истории загрузок в режиме без UI.
 
 use anyhow::Result;
 
@@ -9,23 +9,23 @@ pub(super) fn show_history_menu() -> Result<()> {
 
     loop {
         let items = read_download_history(50, keyword.as_deref());
-        println!("\n===== 下载历史（最近 50 条） =====");
+        println!("\n===== История загрузок (последние 50) =====");
         if let Some(k) = keyword.as_deref() {
-            println!("过滤关键字: {}", k);
+            println!("Ключ фильтра: {}", k);
         }
 
         if items.is_empty() {
-            println!("暂无记录");
+            println!("Записей нет");
         } else {
             for (i, it) in items.iter().enumerate() {
                 println!(
-                    "{:>2}. [{}] 《{}》({}) | 作者: {} | {} | 状态: {}",
+                    "{:>2}. [{}] «{}» ({}) | автор: {} | {} | статус: {}",
                     i + 1,
                     it.timestamp,
                     it.book_name,
                     it.book_id,
                     if it.author.trim().is_empty() {
-                        "未知"
+                        "неизвестен"
                     } else {
                         it.author.trim()
                     },
@@ -35,8 +35,8 @@ pub(super) fn show_history_menu() -> Result<()> {
             }
         }
 
-        println!("\n操作：Enter=刷新, f=设置过滤关键字, c=清空过滤, q=返回");
-        let cmd = super::read_line("选择: ")?;
+        println!("\nДействия: Enter=обновить, f=задать ключ фильтра, c=сбросить фильтр, q=назад");
+        let cmd = super::read_line("Выбор: ")?;
         let cmd = cmd.trim();
         if cmd.is_empty() {
             continue;
@@ -45,10 +45,10 @@ pub(super) fn show_history_menu() -> Result<()> {
             break;
         }
         if cmd.eq_ignore_ascii_case("f") {
-            let q = super::read_line("输入书名/作者/ID关键字: ")?;
+            let q = super::read_line("Введите ключ (название/автор/ID): ")?;
             let q = q.trim();
             if q.is_empty() {
-                println!("关键字为空，保持当前过滤。\n");
+                println!("Ключ пуст, текущий фильтр сохранён.\n");
             } else {
                 keyword = Some(q.to_string());
             }

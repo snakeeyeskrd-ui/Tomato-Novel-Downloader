@@ -1,6 +1,6 @@
-//! TUI 下载页。
+//! TUI download page.
 //!
-//! 处理用户输入、启动下载任务、展示进度与状态。
+//! Handles input, starts download tasks, shows progress and status.
 
 use std::sync::{Arc, atomic::AtomicBool};
 use std::thread;
@@ -17,10 +17,10 @@ use super::{App, Focus, PendingDownload, View, WorkerMsg, start_spinner};
 pub(super) fn request_cancel_download(app: &mut App) {
     if let Some(flag) = app.download_cancel_flag.as_ref() {
         flag.store(true, std::sync::atomic::Ordering::SeqCst);
-        app.status = "已请求停止下载…".to_string();
-        app.push_message("已发送停止信号，稍后结束当前任务");
+        app.status = "Запрошена остановка загрузки…".to_string();
+        app.push_message("Сигнал остановки отправлен, текущая задача скоро завершится");
     } else {
-        app.status = "当前没有正在进行的下载".to_string();
+        app.status = "Сейчас нет активной загрузки".to_string();
     }
     app.stop_button_area = None;
 }
@@ -69,18 +69,18 @@ pub(super) fn start_download_task(
         .clone()
         .unwrap_or_else(|| book_id.clone());
 
-    app.status = format!("开始下载: 《{}》 ({})", title, book_id);
-    info!(target: "ui", book_id = %book_id, "启动下载任务");
+    app.status = format!("Начало загрузки: «{}» ({})", title, book_id);
+    info!(target: "ui", book_id = %book_id, "Starting download task");
     debug!(
         target: "ui",
         book_id = %book_id,
         save_path = %app.config.save_path,
         format = %app.config.novel_format,
         workers = app.config.max_workers,
-        "下载参数"
+        "Download parameters"
     );
 
-    start_spinner(app, format!("下载中: {book_id}"));
+    start_spinner(app, format!("Загрузка: {book_id}"));
     let tx = app.worker_tx.clone();
     let progress_tx = app.worker_tx.clone();
     let cfg = app.config.clone();
@@ -93,7 +93,10 @@ pub(super) fn start_download_task(
         };
         let ask_tx = tx.clone();
         let book_name_asker = move |manager: &crate::book_parser::book_manager::BookManager| {
-            let options = downloader::collect_book_name_options(manager);
+            let mut options = downloader::collect_book_name_options(manager);
+            for o in &mut options {
+                o.label = localize_option_label(&o.label);
+            }
             if options.len() <= 1 {
                 return None;
             }
@@ -106,7 +109,10 @@ pub(super) fn start_download_task(
         };
         let format_ask_tx = tx.clone();
         let format_asker = move |_manager: &crate::book_parser::book_manager::BookManager| {
-            let options = downloader::collect_output_format_options();
+            let mut options = downloader::collect_output_format_options();
+            for o in &mut options {
+                o.label = localize_option_label(&o.label);
+            }
             let (resp_tx, resp_rx) = std::sync::mpsc::channel();
             let _ = format_ask_tx.send(WorkerMsg::AskFormat {
                 options,
@@ -151,9 +157,9 @@ pub(super) fn apply_download_progress(app: &mut App, snap: ProgressSnapshot) {
 pub(super) fn apply_download_done(app: &mut App, book_id: String, result: Result<()>) {
     match result {
         Ok(()) => {
-            app.status = format!("下载完成: {book_id}");
-            app.push_message("下载完成");
-            info!(target: "ui", book_id = %book_id, "下载完成");
+            app.status = format!("Загрузка завершена: {book_id}");
+            app.push_message("Загрузка завершена");
+            info!(target: "ui", book_id = %book_id, "Загрузка завершена");
             app.pending_download = None;
             app.preview_range.clear();
             app.preview_buttons.select(Some(0));
@@ -165,10 +171,10 @@ pub(super) fn apply_download_done(app: &mut App, book_id: String, result: Result
             app.stop_button_area = None;
         }
         Err(err) => {
-            app.status = format!("下载失败: {err}");
-            app.push_message(format!("下载失败: {err}"));
+            app.status = format!("Ошибка загрузки: {err}");
+            app.push_message(format!("Ошибка загрузки: {err}"));
             super::maybe_show_iid_failure(app, err.to_string());
-            warn!(target: "ui", book_id = %book_id, "下载失败: {err}");
+            warn!(target: "ui", book_id = %book_id, "Ошибка загрузки: {err}");
             app.pending_download = None;
             app.preview_range.clear();
             app.preview_buttons.select(Some(0));
@@ -179,5 +185,24 @@ pub(super) fn apply_download_done(app: &mut App, book_id: String, result: Result
             app.download_cancel_flag = None;
             app.stop_button_area = None;
         }
+    }
+}
+
+fn localize_option_label(label: &str) -> String {
+    // Source labels in downloader::collect_*_options are already Russian;
+    // keep Chinese→Russian mapping for backward compatibility.
+    match label {
+        "Название по умолчанию" | "\u{9ed8}\u{8ba4}\u{4e66}\u{540d}" => {
+            "Название по умолчанию".to_string()
+        }
+        "Оригинальное название" | "\u{539f}\u{59cb}\u{4e66}\u{540d}" => {
+            "Оригинальное название".to_string()
+        }
+        "Короткое название" | "\u{77ed}\u{4e66}\u{540d}" => "Короткое название".to_string(),
+        "Формат txt" | "txt \u{683c}\u{5f0f}" => "Формат txt".to_string(),
+        "Формат epub" | "epub \u{683c}\u{5f0f}" => "Формат epub".to_string(),
+        "Формат pdf" | "pdf \u{683c}\u{5f0f}" => "Формат pdf".to_string(),
+        "Отдельные файлы" | "\u{6563}\u{88c5}\u{6587}\u{4ef6}" => "Отдельные файлы".to_string(),
+        other => other.to_string(),
     }
 }

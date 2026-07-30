@@ -123,7 +123,7 @@ impl EpubGenerator {
 
     pub fn add_chapter_named(&mut self, file_name: String, title: &str, content: &str) {
         let cleaned = if content.trim().is_empty() {
-            "<p class='no-indent'>本章内容未下载完成或为空（可能是用户中断或网络错误）。</p>"
+            "<p class='no-indent'>Содержание главы не загружено или пусто (возможно, прерывание пользователем или сетевая ошибка).</p>"
                 .to_string()
         } else {
             content.to_string()
@@ -148,7 +148,7 @@ impl EpubGenerator {
     ) -> String {
         let cleaned = if content.trim().is_empty() {
             format!(
-                "<h3>{}</h3><p class='no-indent'>（空页面）</p>",
+                "<h3>{}</h3><p class='no-indent'>(пустая страница)</p>",
                 html_escape(title)
             )
         } else {

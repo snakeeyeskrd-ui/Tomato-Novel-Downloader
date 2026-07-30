@@ -40,7 +40,7 @@ pub(crate) async fn api_search(
         // 并发限制：最多 2 个同时进行的上游 API 请求。
         let _permit =
             _state.api_semaphore.acquire().await.map_err(|_| {
-                api_error(StatusCode::SERVICE_UNAVAILABLE, "上游 API 并发限制已关闭")
+                api_error(StatusCode::SERVICE_UNAVAILABLE, "Лимит параллельных запросов к API закрыт")
             })?;
 
         let resp = tokio::task::spawn_blocking(move || {
@@ -48,8 +48,8 @@ pub(crate) async fn api_search(
             client.search_books(&keyword)
         })
         .await
-        .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "搜索任务执行失败"))?
-        .map_err(|err| api_error(StatusCode::BAD_GATEWAY, format!("搜索失败: {err}")))?;
+        .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "Ошибка выполнения поиска"))?
+        .map_err(|err| api_error(StatusCode::BAD_GATEWAY, format!("Ошибка поиска: {err}")))?;
 
         let items: Vec<Value> = resp
             .books

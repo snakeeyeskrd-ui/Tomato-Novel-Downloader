@@ -43,7 +43,9 @@ pub(crate) fn resolve_api_urls(
         .map(|s| s.as_str())
         .map(normalize_base)
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow!("use_official_api=false 时，api_endpoints 不能为空"))?;
+        .ok_or_else(|| anyhow!(
+            "Список api_endpoints пуст. Эта сборка без Official-API: укажите сторонние API в Настройках (api_endpoints) или в config.yml. Официальный API в открытый код не входит."
+        ))?;
 
     // 目录接口（网页端）
     let directory_url = if base.contains("/api/") && base.contains("directory") {
@@ -159,7 +161,7 @@ pub(crate) fn fetch_group_third_party(
         let ep = {
             let guard = endpoints.lock().unwrap_or_else(|e| e.into_inner());
             if guard.is_empty() {
-                return Err(anyhow!("第三方 API 地址池已为空（全部判定无效）"));
+                return Err(anyhow!("Пул адресов стороннего API пуст (все признаны недействительными)"));
             }
             let idx = pick.fetch_add(1, Ordering::Relaxed) % guard.len();
             guard[idx].clone()
@@ -184,5 +186,5 @@ pub(crate) fn fetch_group_third_party(
         }
     }
 
-    Err(anyhow!("第三方 API 请求重试耗尽"))
+    Err(anyhow!("Исчерпаны повторы запросов к стороннему API"))
 }

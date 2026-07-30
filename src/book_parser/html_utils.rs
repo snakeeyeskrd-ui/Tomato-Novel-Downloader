@@ -316,7 +316,7 @@ pub(crate) fn clean_epub_body(html: &str) -> String {
                 if text.is_empty() {
                     continue;
                 }
-                let line = format!("﹝图﹞ {}", text);
+                let line = format!("[Рис.] {}", text);
                 out.push(format!("<p class=\"img-desc\">{}</p>", escape_html(&line)));
                 continue;
             }
@@ -337,7 +337,7 @@ pub(crate) fn clean_epub_body(html: &str) -> String {
                     let inner = unescape_basic_entities(inner.as_ref());
                     let text = inner.trim();
                     if !text.is_empty() {
-                        let line = format!("﹝图﹞ {}", text);
+                        let line = format!("[Рис.] {}", text);
                         out.push(format!("<p class=\"img-desc\">{}</p>", escape_html(&line)));
                     }
                 }

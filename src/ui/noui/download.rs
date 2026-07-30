@@ -1,4 +1,4 @@
-//! 无 UI 下载交互与执行。
+//! Загрузка: интерактив и выполнение в режиме без UI.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -63,7 +63,7 @@ fn ensure_local_download_exists(config: &Config, book_id: &str) -> Result<()> {
     }
 
     Err(anyhow!(
-        "CLI 模式仅支持更新本地已有小说：未在 {} 下找到 book_id={} 的下载记录。请先使用 Web UI 或 TUI 完成首次下载。",
+        "CLI поддерживает только обновление уже скачанных новелл: в {} не найдена запись загрузки для book_id={}. Сначала выполните первую загрузку через Web UI или TUI.",
         config.default_save_dir().display(),
         book_id
     ))
@@ -72,7 +72,12 @@ fn ensure_local_download_exists(config: &Config, book_id: &str) -> Result<()> {
 fn has_local_download_record(config: &Config, book_id: &str) -> Result<bool> {
     Ok(config
         .find_existing_status_folder_by_book_id(book_id, None)
-        .with_context(|| format!("读取保存目录失败: {}", config.default_save_dir().display()))?
+        .with_context(|| {
+            format!(
+                "Не удалось прочитать каталог сохранения: {}",
+                config.default_save_dir().display()
+            )
+        })?
         .is_some())
 }
 
@@ -84,7 +89,7 @@ fn download_book_with_options(
     let start_time = Instant::now();
 
     let plan = dl::prepare_download_plan(config, book_id, dl::BookMeta::default())
-        .with_context(|| format!("准备下载计划失败: book_id={}", book_id))?;
+        .with_context(|| format!("Не удалось подготовить план загрузки: book_id={}", book_id))?;
 
     let book_name = plan
         .meta
@@ -92,37 +97,46 @@ fn download_book_with_options(
         .clone()
         .unwrap_or_else(|| plan.book_id.clone());
 
-    // 打印书籍信息（对齐 old_main.py 的信息展示）
-    println!("\n书名: {}", book_name);
+    // Печать сведений о книге (как в old_main.py)
+    println!("\nНазвание: {}", book_name);
     if let Some(author) = plan.meta.author.as_deref() {
-        println!("作者: {}", author);
+        println!("Автор: {}", author);
     }
     if let Some(finished) = plan.meta.finished {
-        println!("是否完结: {}", if finished { "完结" } else { "连载" });
+        println!(
+            "Статус: {}",
+            if finished {
+                "завершена"
+            } else {
+                "продолжается"
+            }
+        );
     }
     if let Some(count) = plan.meta.chapter_count {
-        println!("章节数: {}", count);
+        println!("Глав: {}", count);
     }
     if !plan.meta.tags.is_empty() {
-        println!("标签: {}", plan.meta.tags.join("|"));
+        println!("Теги: {}", plan.meta.tags.join("|"));
     }
     if let Some(desc) = plan.meta.description.as_deref() {
         let mut short = desc.to_string();
         if short.chars().count() > 50 {
             short = short.chars().take(50).collect::<String>() + "...";
         }
-        println!("简介: {}", short);
+        println!("Описание: {}", short);
     }
 
-    // 初始化 BookManager 并尝试加载历史状态
+    // Инициализация BookManager и попытка загрузить историю состояния
     let mut manager = dl::init_manager_from_plan(config, &plan)?;
     let resumed =
         manager.load_existing_status(&manager.book_id.clone(), &manager.book_name.clone());
     if resumed {
-        println!("\n已检测到历史下载记录，可继续下载或选择重新下载。\n");
+        println!(
+            "\nОбнаружена история загрузки — можно продолжить или скачать заново.\n"
+        );
     }
 
-    // 若封面已经下载到状态目录，尝试 ASCII 预览
+    // Если обложка уже в каталоге состояния — попробовать ASCII-превью
     if let Some(cover) = find_cover_image(manager.book_folder()) {
         let _ = preview_cover_ascii(&cover);
     }
@@ -130,7 +144,7 @@ fn download_book_with_options(
     let total = plan.chapters.len();
     let (downloaded_ok, failed_count) = count_download_state(&manager, &plan.chapters);
     println!(
-        "共发现 {} 章，下载失败 {} 章，已下载 {} 章",
+        "Найдено глав: {}, с ошибкой: {}, уже скачано: {}",
         total, failed_count, downloaded_ok
     );
 
@@ -152,7 +166,7 @@ fn download_book_with_options(
         }
         DownloadMode::Full => {
             manager.downloaded.clear();
-            println!("将重新下载全部章节");
+            println!("Будут заново скачаны все главы");
         }
         DownloadMode::RangeIgnoreHistory | DownloadMode::RangeOrAll => {
             range = if options.interactive {
@@ -169,7 +183,7 @@ fn download_book_with_options(
 
     let chosen_chapters = dl::apply_range(&plan.chapters, range);
     if chosen_chapters.is_empty() {
-        println!("范围无效或章节为空\n");
+        println!("Диапазон недействителен или список глав пуст\n");
         let _ = manager.cleanup_status_folder();
         return Ok(());
     }
@@ -181,29 +195,31 @@ fn download_book_with_options(
 
     if matches!(mode, DownloadMode::Resume) {
         println!(
-            "继续下载剩余章节: {} 章 (已完成 {})",
+            "Продолжение загрузки оставшихся глав: {} (уже готово: {})",
             pending.len(),
             chosen_chapters.len().saturating_sub(pending.len())
         );
     }
 
     if pending.is_empty() {
-        println!("没有需要下载的章节，将仅补齐段评缓存并执行收尾生成。\n");
+        println!(
+            "Нет глав для загрузки — будут только дополнены кэш комментариев к абзацам и финальная генерация.\n"
+        );
     }
 
-    println!("\n开始下载...");
+    println!("\nНачинаю загрузку...");
     let save_dir = manager.default_save_dir();
 
     let retry_failed = if options.interactive {
         dl::RetryFailed::Decide(Box::new(|pending_len| {
-            let ans = super::read_line("是否重新下载错误章节？[Y/n]: ")
+            let ans = super::read_line("Повторно скачать главы с ошибками? [Y/n]: ")
                 .map(|s| s.trim().to_ascii_lowercase())
                 .unwrap_or_else(|_| "n".to_string());
             if ans == "n" {
-                println!("失败章节已保留在缓存/状态文件中。\n");
+                println!("Неудачные главы сохранены в кэше/файле состояния.\n");
                 return false;
             }
-            println!("\n重新下载失败章节: {} 章...", pending_len);
+            println!("\nПовторная загрузка неудачных глав: {}...", pending_len);
             true
         }))
     } else if options.retry_failed_once {
@@ -213,7 +229,7 @@ fn download_book_with_options(
                 return false;
             }
             retried = true;
-            println!("\n重新下载失败章节: {} 章...", pending_len);
+            println!("\nПовторная загрузка неудачных глав: {}...", pending_len);
             true
         }))
     } else {
@@ -237,7 +253,7 @@ fn download_book_with_options(
             retry_failed,
             stage_callback: Some(Box::new(|result| {
                 println!(
-                    "\n下载完成（阶段）成功: {} 章 | 失败: {} 章 | 取消: {} 章",
+                    "\nЭтап загрузки завершён — успешно: {} гл. | ошибок: {} гл. | отменено: {} гл.",
                     result.success, result.failed, result.canceled
                 );
             })),
@@ -249,10 +265,10 @@ fn download_book_with_options(
     )?;
 
     println!(
-        "\n下载完成！用时 {:.1} 秒",
+        "\nЗагрузка завершена! Время: {:.1} с",
         start_time.elapsed().as_secs_f32()
     );
-    println!("已保存到 {}", save_dir.display());
+    println!("Сохранено в {}", save_dir.display());
     Ok(())
 }
 
@@ -267,15 +283,15 @@ enum DownloadMode {
 }
 
 fn select_download_mode(has_failed: bool) -> Result<DownloadMode> {
-    println!("\n===== 下载模式选择 =====");
-    println!("1. 继续下载未完成章节");
-    println!("2. 全部重新下载");
+    println!("\n===== Выбор режима загрузки =====");
+    println!("1. Продолжить незавершённые главы");
+    println!("2. Скачать всё заново");
     if has_failed {
-        println!("3. 仅重新下载失败章节");
+        println!("3. Только главы с ошибками");
     }
-    println!("4. 指定章节范围重新下载 (忽略历史记录)");
-    println!("q. 取消");
-    let sel = super::read_line("请选择(默认1): ")?;
+    println!("4. Задать диапазон глав и скачать заново (игнорировать историю)");
+    println!("q. Отмена");
+    let sel = super::read_line("Выберите (по умолчанию 1): ")?;
     let sel = sel.trim().to_ascii_lowercase();
     let mode = match sel.as_str() {
         "" | "1" => DownloadMode::Resume,
@@ -289,21 +305,21 @@ fn select_download_mode(has_failed: bool) -> Result<DownloadMode> {
 }
 
 fn prompt_range(total: usize) -> Result<Option<dl::ChapterRange>> {
-    let text = super::read_line("输入章节范围 形如 10~200 (留空表示全部): ")?;
+    let text = super::read_line("Введите диапазон глав, например 10~200 (пусто — все): ")?;
     let text = text.trim();
     if text.is_empty() {
         return Ok(None);
     }
     let Some((a, b)) = text.split_once('~') else {
-        println!("范围格式错误，应为 a~b，将使用全部章节");
+        println!("Неверный формат диапазона, ожидается a~b; будут использованы все главы");
         return Ok(None);
     };
     let Ok(mut start) = a.trim().parse::<usize>() else {
-        println!("范围解析失败，将使用全部章节");
+        println!("Не удалось разобрать диапазон; будут использованы все главы");
         return Ok(None);
     };
     let Ok(mut end) = b.trim().parse::<usize>() else {
-        println!("范围解析失败，将使用全部章节");
+        println!("Не удалось разобрать диапазон; будут использованы все главы");
         return Ok(None);
     };
     if start == 0 {
@@ -317,7 +333,7 @@ fn prompt_range(total: usize) -> Result<Option<dl::ChapterRange>> {
     if start > end {
         std::mem::swap(&mut start, &mut end);
     }
-    println!("已选择章节范围: {}~{}", start, end);
+    println!("Выбран диапазон глав: {}~{}", start, end);
     Ok(Some(dl::ChapterRange { start, end }))
 }
 
@@ -361,16 +377,17 @@ fn preview_cover_ascii(image_path: &Path) -> Result<()> {
     let cols = cols.max(40) as u32;
     let rows = rows.max(10) as u32;
     println!(
-        "\n{}封面预览{}",
+        "\n{}превью обложки{}",
         "=".repeat((cols as usize).saturating_sub(16) / 2),
         "=".repeat((cols as usize).saturating_sub(16) / 2)
     );
 
     let img = image::open(image_path)
-        .with_context(|| format!("打开封面失败: {}", image_path.display()))?;
+        .with_context(|| format!("Не удалось открыть обложку: {}", image_path.display()))?;
     let gray = img.to_luma8();
 
-    // 字符宽高比矫正：字符通常更“高”，所以宽度多取一些、并降低高度
+    // Коррекция соотношения сторон символов: символы обычно «выше»,
+    // поэтому берём чуть большую ширину и меньшую высоту.
     let target_w = cols;
     let target_h = (rows.saturating_sub(6)).max(8);
     let resized = image::imageops::resize(

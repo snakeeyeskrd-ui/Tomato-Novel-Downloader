@@ -1,4 +1,4 @@
-//! TUI 封面/基础信息展示。
+//! TUI cover / basic info display.
 
 use super::*;
 use image::{DynamicImage, GenericImageView, imageops::FilterType};
@@ -8,7 +8,7 @@ pub(super) fn handle_event_cover(app: &mut App, event: Event) -> Result<()> {
         Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
             KeyCode::Char('q') | KeyCode::Esc | KeyCode::Enter => {
                 app.view = app.previous_view;
-                app.status = "返回".to_string();
+                app.status = "Назад".to_string();
             }
             _ => {}
         },
@@ -31,39 +31,39 @@ pub(super) fn show_cover(
     app.previous_view = app.view;
     app.cover_lines.clear();
 
-    let cover_title = format!("《{}》 ({})", title, book_id);
+    let cover_title = format!("«{}» ({})", title, book_id);
     app.cover_title = cover_title;
 
     let candidates = cover_candidates(app, book_id, title, folder);
     let Some(path) = candidates.into_iter().find(|p| p.exists()) else {
         app.view = View::Cover;
-        app.status = "未找到封面文件".to_string();
+        app.status = "Файл обложки не найден".to_string();
         return Ok(());
     };
 
-    let img = image::open(&path).with_context(|| format!("读取封面失败: {}", path.display()))?;
+    let img = image::open(&path).with_context(|| format!("Не удалось прочитать обложку: {}", path.display()))?;
     let (term_w, term_h) = crossterm::terminal::size().unwrap_or((80, 24));
     let ascii = image_to_ascii(img, term_w, term_h);
     app.cover_lines = if ascii.is_empty() {
-        vec!["封面太小，无法显示".to_string()]
+        vec!["Обложка слишком маленькая для отображения".to_string()]
     } else {
         ascii
     };
     app.view = View::Cover;
-    app.status = format!("封面: {} (按 q 返回)", path.display());
+    app.status = format!("Обложка: {} (q — назад)", path.display());
     Ok(())
 }
 
 pub(super) fn draw_cover(frame: &mut ratatui::Frame, app: &mut App) {
     let (main, log_area) = super::split_with_log(frame.size());
     let title = if app.cover_title.is_empty() {
-        "封面预览".to_string()
+        "Просмотр обложки".to_string()
     } else {
         app.cover_title.clone()
     };
 
     let lines: Vec<Line> = if app.cover_lines.is_empty() {
-        vec![Line::from("未找到封面，按 q 返回")]
+        vec![Line::from("Обложка не найдена, нажмите q для возврата")]
     } else {
         app.cover_lines.iter().cloned().map(Line::from).collect()
     };

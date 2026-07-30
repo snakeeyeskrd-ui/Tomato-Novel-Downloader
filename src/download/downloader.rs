@@ -128,7 +128,7 @@ impl ChapterDownloader {
         }
 
         let start = Instant::now();
-        info!("开始下载：{} ({} 章)", book_name, chapters.len());
+        info!("Начало загрузки: {} ({} глав)", book_name, chapters.len());
 
         let groups = build_dynamic_chapter_groups(chapters);
         let total_groups = groups.len() as u64;
@@ -157,8 +157,8 @@ impl ChapterDownloader {
         if worker_count <= 1 {
             for (group_idx, group) in groups.iter().enumerate() {
                 if cancel.map(|c| c.load(Ordering::Relaxed)).unwrap_or(false) {
-                    info!(target: "download", "收到停止信号，结束任务");
-                    return Err(anyhow!("用户停止下载"));
+                    info!(target: "download", "Получен сигнал остановки, завершение задачи");
+                    return Err(anyhow!("Пользователь остановил загрузку"));
                 }
 
                 let outcome = match fetch_group_best_effort(
@@ -174,7 +174,7 @@ impl ChapterDownloader {
                             target: "download",
                             reason = %reason,
                             count = group.len(),
-                            "首轮批量拉取失败，整组章节加入延后重试队列"
+                            "Первый пакетный запрос не удался, вся группа глав добавлена в отложенный повтор"
                         );
                         GroupFetchOutcome {
                             group: group.to_vec(),
@@ -221,7 +221,7 @@ impl ChapterDownloader {
                                     target: "download",
                                     done = saved_in_job,
                                     remaining,
-                                    "保存完成 {} 章 剩 {} 章",
+                                    "Сохранено {} глав, осталось {}",
                                     saved_in_job,
                                     remaining
                                 );
@@ -230,7 +230,7 @@ impl ChapterDownloader {
                                     target: "download",
                                     done = saved_in_job,
                                     remaining,
-                                    "保存完成 {} 章 剩 {} 章",
+                                    "Сохранено {} глав, осталось {}",
                                     saved_in_job,
                                     remaining
                                 );
@@ -238,7 +238,7 @@ impl ChapterDownloader {
                         }
                         _ => {
                             deferred_retry
-                                .push(DeferredChapter::new(ch.clone(), "章节内容缺失或为空"));
+                                .push(DeferredChapter::new(ch.clone(), "Содержимое главы отсутствует или пусто"));
                         }
                     }
                 }
@@ -255,7 +255,7 @@ impl ChapterDownloader {
                 manager.save_download_status();
                 let done_groups = (group_idx + 1) as u64;
                 let remaining_groups = total_groups.saturating_sub(done_groups);
-                info!(target: "download", done = done_groups, remaining = remaining_groups, "下载完成 {} 组 剩 {} 组", done_groups, remaining_groups);
+                info!(target: "download", done = done_groups, remaining = remaining_groups, "Скачано {} групп, осталось {}", done_groups, remaining_groups);
             }
         } else {
             // 多线程模式
@@ -287,7 +287,7 @@ impl ChapterDownloader {
                             .map(|c| c.load(Ordering::Relaxed))
                             .unwrap_or(false)
                         {
-                            let _ = tx.send(Err(anyhow!("用户停止下载")));
+                            let _ = tx.send(Err(anyhow!("Пользователь остановил загрузку")));
                             return;
                         }
                         let epub_mode = cfg.novel_format == "epub";
@@ -318,7 +318,7 @@ impl ChapterDownloader {
             let mut done_groups: u64 = 0;
             for res in rx_res.iter() {
                 if cancel.map(|c| c.load(Ordering::Relaxed)).unwrap_or(false) {
-                    return Err(anyhow!("用户停止下载"));
+                    return Err(anyhow!("Пользователь остановил загрузку"));
                 }
 
                 let outcome = res?;
@@ -349,7 +349,7 @@ impl ChapterDownloader {
                         }
                         _ => {
                             deferred_retry
-                                .push(DeferredChapter::new(ch.clone(), "章节内容缺失或为空"));
+                                .push(DeferredChapter::new(ch.clone(), "Содержимое главы отсутствует или пусто"));
                         }
                     }
                 }
@@ -367,7 +367,7 @@ impl ChapterDownloader {
                     done = done_groups,
                     remaining = remaining_groups,
                     chapters_remaining = remaining_chapters,
-                    "下载完成 {} 组 剩 {} 组（剩余章节约 {}）",
+                    "Скачано {} групп, осталось {} (глав примерно {})",
                     done_groups,
                     remaining_groups,
                     remaining_chapters
@@ -381,11 +381,11 @@ impl ChapterDownloader {
             info!(
                 target: "download",
                 count = deferred_retry.len(),
-                "首轮下载完成，统一刷新 IID 后重试失败章节"
+                "Первый проход завершён, единое обновление IID и повтор неудачных глав"
             );
 
             if let Err(e) = self.client.force_refresh_session() {
-                error!(target: "download", error = %e, "统一重试前刷新 IID 失败，将继续使用当前会话重试");
+                error!(target: "download", error = %e, "Не удалось обновить IID перед общим повтором, продолжаем с текущей сессией");
             }
 
             let deferred_total = deferred_retry.len();
@@ -403,13 +403,13 @@ impl ChapterDownloader {
                     target: "download",
                     expected = deferred_total,
                     actual = retry_outcomes.len(),
-                    "延后重试结果数量与输入章节数不一致"
+                    "Число результатов отложенного повтора не совпадает с числом входных глав"
                 );
             }
 
             for outcome in retry_outcomes {
                 if cancel.map(|c| c.load(Ordering::Relaxed)).unwrap_or(false) {
-                    return Err(anyhow!("用户停止下载"));
+                    return Err(anyhow!("Пользователь остановил загрузку"));
                 }
 
                 match outcome {
@@ -447,7 +447,7 @@ impl ChapterDownloader {
                         target: "download",
                         done = saved_in_job,
                         remaining,
-                        "保存完成 {} 章 剩 {} 章",
+                        "Сохранено {} глав, осталось {}",
                         saved_in_job,
                         remaining
                     );
@@ -456,7 +456,7 @@ impl ChapterDownloader {
                         target: "download",
                         done = saved_in_job,
                         remaining,
-                        "保存完成 {} 章 剩 {} 章",
+                        "Сохранено {} глав, осталось {}",
                         saved_in_job,
                         remaining
                     );
@@ -471,7 +471,7 @@ impl ChapterDownloader {
 
         let elapsed = start.elapsed().as_secs_f32();
         info!(
-            "下载完成：{} 成功 {} 章，失败 {} 章，用时 {:.1}s",
+            "Загрузка завершена: {} успешно {} глав, ошибок {} глав, время {:.1}s",
             book_name, result.success, result.failed, elapsed
         );
 
@@ -515,7 +515,7 @@ pub fn download_with_plan_flow(
     progress: Option<Box<dyn FnMut(ProgressSnapshot) + Send>>,
     cancel_flag: Option<Arc<AtomicBool>>,
 ) -> Result<()> {
-    info!(target: "download", book_id = %plan.book_id, "启动下载");
+    info!(target: "download", book_id = %plan.book_id, "Запуск загрузки");
 
     let DownloadFlowOptions {
         mode,
@@ -528,7 +528,7 @@ pub fn download_with_plan_flow(
 
     let chosen_chapters = apply_range(&plan.chapters, range);
     if chosen_chapters.is_empty() {
-        return Err(anyhow!("范围无效或章节为空"));
+        return Err(anyhow!("Диапазон недействителен или список глав пуст"));
     }
 
     let mut manager = if let Some(manager) = manager {
@@ -640,7 +640,7 @@ fn rename_old_folder_if_needed(config: &Config, book_id: &str, _new_book_name: &
             target: "download",
             book_id,
             folder = %stable_folder.display(),
-            "已按 BookID 解析稳定缓存目录"
+            "Стабильный каталог кэша определён по BookID"
         );
     }
     Ok(())
@@ -658,7 +658,7 @@ fn rename_cover_files_if_needed(folder: &Path, old_book_name: &str, new_book_nam
             target: "download",
             old = %before.display(),
             new = %after.display(),
-            "迁移封面文件到稳定名称"
+            "Перенос файла обложки на стабильное имя"
         );
     }
 }
@@ -674,7 +674,7 @@ pub(crate) fn init_manager_from_plan(config: &Config, plan: &DownloadPlan) -> Re
         debug!(
             target: "download",
             error = ?e,
-            "重命名旧文件夹失败，将继续使用新文件夹"
+            "Не удалось переименовать старую папку, продолжаем с новой"
         );
     }
 
@@ -744,10 +744,10 @@ pub(crate) fn download_chapters_into_manager(
     }
 
     if pending_chapters.is_empty() {
-        info!("没有需要下载的章节，跳过下载阶段（断点续传：仅补段评缓存）");
+        info!("Нет глав для загрузки, этап загрузки пропущен (докачка: только кэш комментариев к абзацам)");
     }
 
-    debug!(target: "download", pending = pending_chapters.len(), total = reporter.snapshot.chapter_total, "待下载章节统计");
+    debug!(target: "download", pending = pending_chapters.len(), total = reporter.snapshot.chapter_total, "Статистика глав к загрузке");
 
     let item_versions = directory_raw
         .map(extract_item_version_map)
@@ -835,7 +835,9 @@ fn download_third_party_flow(
     seg_pool: Option<&SegmentCommentPool>,
 ) -> Result<DownloadResult> {
     if config.api_endpoints.is_empty() {
-        return Err(anyhow!("use_official_api=false 时，api_endpoints 不能为空"));
+        return Err(anyhow!(
+            "Список api_endpoints пуст. Эта сборка без Official-API: укажите сторонние API в Настройках (api_endpoints) или в config.yml. Официальный API в открытый код не входит."
+        ));
     }
 
     let probe_chapter_id = pending_chapters
@@ -843,7 +845,7 @@ fn download_third_party_flow(
         .map(|c| c.id.as_str())
         .unwrap_or("");
     if probe_chapter_id.is_empty() {
-        return Err(anyhow!("章节列表为空，无法预热第三方 API"));
+        return Err(anyhow!("Список глав пуст, невозможно прогреть сторонний API"));
     }
 
     let mut valid = validate_endpoints(config, probe_chapter_id);
@@ -856,10 +858,10 @@ fn download_third_party_flow(
             .collect();
     }
     if valid.is_empty() {
-        return Err(anyhow!("第三方 API 地址池为空"));
+        return Err(anyhow!("Пул адресов стороннего API пуст"));
     }
 
-    info!(target: "download", endpoints = valid.len(), "第三方 API 地址池预热完成");
+    info!(target: "download", endpoints = valid.len(), "Пул адресов стороннего API прогрет");
 
     let endpoints = Arc::new(std::sync::Mutex::new(valid));
     let picker = Arc::new(AtomicUsize::new(0));
@@ -888,7 +890,7 @@ fn download_third_party_flow(
                     .map(|c| c.load(Ordering::Relaxed))
                     .unwrap_or(false)
                 {
-                    let _ = tx.send(Err(anyhow!("用户停止下载")));
+                    let _ = tx.send(Err(anyhow!("Пользователь остановил загрузку")));
                     return;
                 }
                 let value = fetch_group_third_party(&cfg, &endpoints, &picker, &group, epub_mode);
@@ -901,7 +903,7 @@ fn download_third_party_flow(
     let mut result = DownloadResult::default();
     for res in rx_res.iter() {
         if cancel.map(|c| c.load(Ordering::Relaxed)).unwrap_or(false) {
-            return Err(anyhow!("用户停止下载"));
+            return Err(anyhow!("Пользователь остановил загрузку"));
         }
 
         let (group, value) = res?;
@@ -920,7 +922,7 @@ fn download_third_party_flow(
                     }
                 }
                 _ => {
-                    log_failed_chapter(ch, "章节内容缺失或为空");
+                    log_failed_chapter(ch, "Содержимое главы отсутствует или пусто");
                     manager.save_error_chapter(&ch.id, &ch.title);
                     result.failed += 1;
                 }
@@ -937,7 +939,7 @@ fn download_third_party_flow(
 
     info!(
         target: "download",
-        "第三方下载完成：{} ({} 章)",
+        "Стороннее скачивание завершено: {} ({} глав)",
         book_name,
         pending_chapters.len()
     );
@@ -975,21 +977,21 @@ pub(crate) fn finalize_from_manager(
         && let Some(asker) = format_asker.as_mut()
         && let Some(chosen_fmt) = asker(manager)
     {
-        info!(target: "download", "用户选择输出格式: {}", chosen_fmt);
+        info!(target: "download", "Пользователь выбрал формат вывода: {}", chosen_fmt);
         if let Err(err) = manager.config.apply_output_format_choice(&chosen_fmt) {
-            warn!(target: "download", error = %err, "应用输出格式选择失败");
+            warn!(target: "download", error = %err, "Не удалось применить выбранный формат вывода");
         }
         manager.format_selected_after_download = true;
     }
 
-    debug!(target: "download", "保存下载状态");
+    debug!(target: "download", "Сохранение состояния загрузки");
     manager.save_download_status();
 
     let mut chapter_values = Vec::with_capacity(manager.downloaded.len());
     let mut finalized_ids = HashSet::with_capacity(chosen.len());
     for ch in chosen {
         if !finalized_ids.insert(&ch.id) {
-            warn!(target: "download", id = %ch.id, title = %ch.title, "跳过最终输出中的重复章节");
+            warn!(target: "download", id = %ch.id, title = %ch.title, "Пропуск дубликата главы в итоговом выводе");
             continue;
         }
         match manager.downloaded.get(&ch.id) {
@@ -1006,7 +1008,7 @@ pub(crate) fn finalize_from_manager(
                 obj.insert("title".to_string(), Value::String(title.clone()));
                 obj.insert(
                     "content".to_string(),
-                    Value::String("[本章下载失败]".to_string()),
+                    Value::String("[Не удалось скачать главу]".to_string()),
                 );
                 chapter_values.push(Value::Object(obj));
             }
@@ -1016,7 +1018,7 @@ pub(crate) fn finalize_from_manager(
                 obj.insert("title".to_string(), Value::String(ch.title.clone()));
                 obj.insert(
                     "content".to_string(),
-                    Value::String("[本章下载失败]".to_string()),
+                    Value::String("[Не удалось скачать главу]".to_string()),
                 );
                 chapter_values.push(Value::Object(obj));
             }
@@ -1049,7 +1051,7 @@ pub(crate) fn finalize_from_manager(
         && all_success
         && let Err(e) = manager.delete_status_folder()
     {
-        error!(target: "book_manager", error = ?e, "删除状态目录失败");
+        error!(target: "book_manager", error = ?e, "Не удалось удалить каталог состояния");
     }
 
     if let Some(r) = reporter {
@@ -1065,7 +1067,7 @@ pub(crate) fn collect_book_name_options(manager: &BookManager) -> Vec<BookNameOp
     let default_name = manager.book_name.clone();
     if !default_name.is_empty() {
         options.push(BookNameOption {
-            label: "默认书名".to_string(),
+            label: "Название по умолчанию".to_string(),
             value: default_name.clone(),
         });
     }
@@ -1075,7 +1077,7 @@ pub(crate) fn collect_book_name_options(manager: &BookManager) -> Vec<BookNameOp
         && orig != &default_name
     {
         options.push(BookNameOption {
-            label: "原始书名".to_string(),
+            label: "Оригинальное название".to_string(),
             value: orig.clone(),
         });
     }
@@ -1090,7 +1092,7 @@ pub(crate) fn collect_book_name_options(manager: &BookManager) -> Vec<BookNameOp
             .is_some_and(|o| o == short);
         if !dup {
             options.push(BookNameOption {
-                label: "短书名".to_string(),
+                label: "Короткое название".to_string(),
                 value: short.clone(),
             });
         }
@@ -1102,19 +1104,19 @@ pub(crate) fn collect_book_name_options(manager: &BookManager) -> Vec<BookNameOp
 pub(crate) fn collect_output_format_options() -> Vec<BookNameOption> {
     vec![
         BookNameOption {
-            label: "txt 格式".to_string(),
+            label: "Формат txt".to_string(),
             value: "txt".to_string(),
         },
         BookNameOption {
-            label: "epub 格式".to_string(),
+            label: "Формат epub".to_string(),
             value: "epub".to_string(),
         },
         BookNameOption {
-            label: "pdf 格式".to_string(),
+            label: "Формат pdf".to_string(),
             value: "pdf".to_string(),
         },
         BookNameOption {
-            label: "散装文件".to_string(),
+            label: "Отдельные файлы".to_string(),
             value: "bulk_txt".to_string(),
         },
     ]
@@ -1141,7 +1143,7 @@ fn log_failed_chapter(chapter: &ChapterRef, reason: &str) {
         chapter_id = %chapter.id,
         chapter_title = %chapter.title,
         reason,
-        "章节下载失败：{} ({})",
+        "Ошибка загрузки главы: {} ({})",
         chapter.title,
         chapter.id
     );
@@ -1254,7 +1256,7 @@ fn attempt_deferred_batch(
                     .iter()
                     .find(|item| item.chapter.id == chapter.id)
                     .map(|item| item.reason.as_str())
-                    .unwrap_or("章节内容缺失或为空");
+                    .unwrap_or("Содержимое главы отсутствует или пусто");
                 pending.push(DeferredChapter::new(chapter.clone(), reason));
             }
         }
@@ -1278,7 +1280,7 @@ where
         .map(|flag| flag.load(Ordering::Relaxed))
         .unwrap_or(false)
     {
-        return Err(anyhow!("用户停止下载"));
+        return Err(anyhow!("Пользователь остановил загрузку"));
     }
 
     if deferred.is_empty() {
@@ -1292,7 +1294,7 @@ where
             total = deferred.len(),
             left = mid,
             right = deferred.len() - mid,
-            "延后重试批次超过单次接口上限，拆分为两批继续重试"
+            "Пакет отложенного повтора превышает лимит API, разбиваем на два пакета"
         );
 
         let mut outcomes = retry_deferred_bisect_with(
@@ -1342,7 +1344,7 @@ where
         info!(
             target: "download",
             count = pending.len(),
-            "延后重试批次已缩小，切换为逐章兜底重试"
+            "Пакет отложенного повтора уменьшен, переход к поштучному повтору"
         );
         for deferred in pending {
             outcomes.extend(retry_deferred_bisect_with(
@@ -1362,7 +1364,7 @@ where
         total = pending.len(),
         left = mid,
         right = pending.len() - mid,
-        "批量重试后仍有失败章节，按二分法继续拆分"
+        "После пакетного повтора остались ошибки, продолжаем деление пополам"
     );
     outcomes.extend(retry_deferred_bisect_with(
         &pending[..mid],
@@ -1418,12 +1420,12 @@ fn fetch_group_best_effort(
         let reason = report
             .error
             .as_deref()
-            .unwrap_or("整组章节均缺失，疑似 IID/会话异常");
+            .unwrap_or("Вся группа глав отсутствует, возможна ошибка IID/сессии");
         info!(
             target: "download",
             total = group.len(),
             reason,
-            "检测到整组章节全部失败，立即切回整组换 IID 重试策略"
+            "Вся группа глав завершилась ошибкой, сразу переключаемся на повтор всей группы со сменой IID"
         );
 
         let value = fetch_with_cooldown_retry(client, &ids, epub_mode, book_id)?;
@@ -1443,7 +1445,7 @@ fn fetch_group_best_effort(
             deferred = deferred.len(),
             total = group.len(),
             reason,
-            "首轮下载发现缺失章节，加入延后重试队列"
+            "В первом проходе найдены отсутствующие главы, добавлены в отложенный повтор"
         );
     }
 
@@ -1476,7 +1478,7 @@ fn fetch_best_effort_with_cooldown_retry(
                     && (msg.contains("tomato_novel_network_core") || msg.contains("Library"))
                 {
                     return Err(anyhow!(
-                        "{}\n\n提示：请先构建 Tomato-Novel-Network-Core，并将动态库放到当前目录或设置 FANQIE_NETWORK_CORE_DLL 指向其绝对路径。",
+                        "{}\n\nПодсказка: сначала соберите Tomato-Novel-Network-Core и положите динамическую библиотеку в текущий каталог либо задайте FANQIE_NETWORK_CORE_DLL с абсолютным путём к ней.",
                         msg
                     ));
                 }
@@ -1493,7 +1495,7 @@ fn map_report_to_deferred(
     group: &[ChapterRef],
     report: &ContentFetchReport,
 ) -> Vec<DeferredChapter> {
-    let reason = report.error.as_deref().unwrap_or("章节内容缺失或为空");
+    let reason = report.error.as_deref().unwrap_or("Содержимое главы отсутствует или пусто");
 
     group
         .iter()
@@ -1588,8 +1590,8 @@ mod tests {
             title: "测试章节".to_string(),
         };
 
-        let msg = format!("章节下载失败：{} ({})", ch.title, ch.id);
-        assert_eq!(msg, "章节下载失败：测试章节 (123)");
+        let msg = format!("Ошибка загрузки главы: {} ({})", ch.title, ch.id);
+        assert_eq!(msg, "Ошибка загрузки главы: 测试章节 (123)");
     }
 
     #[cfg(feature = "official-api")]

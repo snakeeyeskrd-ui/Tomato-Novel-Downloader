@@ -43,7 +43,7 @@ pub fn run_finalize(
         && !manager.book_name_selected_after_download
         && let Some(chosen) = prompt_book_name_selection(manager)
     {
-        info!(target: "book_manager", "用户选择书名: {}", chosen);
+        info!(target: "book_manager", "Пользователь выбрал название: {}", chosen);
         let old_name = manager.book_name.clone();
         manager.book_name = chosen;
         manager.book_name_selected_after_download = true;
@@ -57,9 +57,9 @@ pub fn run_finalize(
         && !manager.format_selected_after_download
         && let Some(chosen) = prompt_format_selection(manager)
     {
-        info!(target: "book_manager", "用户选择输出格式: {}", chosen);
+        info!(target: "book_manager", "Пользователь выбрал формат вывода: {}", chosen);
         if let Err(err) = manager.config.apply_output_format_choice(&chosen) {
-            warn!(target: "book_manager", error = %err, "应用输出格式选择失败");
+            warn!(target: "book_manager", error = %err, "Не удалось применить выбранный формат вывода");
         }
         manager.format_selected_after_download = true;
     }
@@ -169,7 +169,7 @@ fn prepare_output_path(manager: &BookManager, fmt: &str) -> std::io::Result<Path
     if !manager.config.allow_overwrite_files && output_path.exists() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::AlreadyExists,
-            format!("文件已存在且配置禁止覆盖: {}", output_path.display()),
+            format!("Файл уже существует, а перезапись запрещена в настройках: {}", output_path.display()),
         ));
     }
 
@@ -202,10 +202,10 @@ fn archive_previous_main_outputs(manager: &BookManager, output_path: &Path) {
         }
 
         let candidates = [
-            (dir.join(format!("{safe_old}.epub")), "旧 EPUB"),
-            (dir.join(format!("{safe_old}.txt")), "旧 TXT"),
-            (dir.join(format!("{safe_old}.pdf")), "旧 PDF"),
-            (dir.join(&safe_old), "旧 bulk TXT 目录"),
+            (dir.join(format!("{safe_old}.epub")), "Старый EPUB"),
+            (dir.join(format!("{safe_old}.txt")), "Старый TXT"),
+            (dir.join(format!("{safe_old}.pdf")), "Старый PDF"),
+            (dir.join(&safe_old), "Старый каталог bulk TXT"),
         ];
 
         for (candidate, label) in candidates {
@@ -242,7 +242,7 @@ fn archive_previous_audiobook_outputs(manager: &BookManager) {
         if candidate == current_audio_dir || !candidate.is_dir() {
             continue;
         }
-        archive_candidate(&dir, &candidate, "旧有声书目录");
+        archive_candidate(&dir, &candidate, "Старый каталог аудиокниги");
     }
 }
 
@@ -253,7 +253,7 @@ fn archive_candidate(base_dir: &Path, candidate: &Path, label: &str) {
     }
 
     if let Err(e) = fs::create_dir_all(&olds_dir) {
-        warn!(target: "book_manager", error = ?e, dir = %olds_dir.display(), "创建 olds 目录失败，跳过旧输出归档");
+        warn!(target: "book_manager", error = ?e, dir = %olds_dir.display(), "Не удалось создать каталог olds, архивация старых файлов пропущена");
         return;
     }
 
@@ -264,7 +264,7 @@ fn archive_candidate(base_dir: &Path, candidate: &Path, label: &str) {
             kind = label,
             old = %candidate.display(),
             archived = %archive_path.display(),
-            "检测到书名变化，已归档旧输出"
+            "Название изменилось — старые файлы заархивированы"
         ),
         Err(e) => warn!(
             target: "book_manager",
@@ -272,7 +272,7 @@ fn archive_candidate(base_dir: &Path, candidate: &Path, label: &str) {
             error = ?e,
             old = %candidate.display(),
             archived = %archive_path.display(),
-            "旧输出归档失败"
+            "Не удалось заархивировать старые файлы"
         ),
     }
 }
@@ -314,46 +314,46 @@ fn finalize_txt(
         let mut inserted_volumes: HashSet<String> = HashSet::new();
 
         // 书籍信息
-        let mut meta = File::create(path.join("0000_书籍信息.txt"))?;
-        writeln!(meta, "书名：{}", manager.book_name)?;
+        let mut meta = File::create(path.join("0000_Информация_о_книге.txt"))?;
+        writeln!(meta, "Название: {}", manager.book_name)?;
         if !manager.author.trim().is_empty() {
-            writeln!(meta, "作者：{}", manager.author)?;
+            writeln!(meta, "Автор: {}", manager.author)?;
         }
         writeln!(meta, "book_id={}", manager.book_id)?;
 
         let status_text = match manager.finished {
-            Some(true) => "完结",
-            Some(false) => "连载",
-            None => "未知",
+            Some(true) => "Завершена",
+            Some(false) => "Продолжается",
+            None => "Неизвестно",
         };
-        writeln!(meta, "状态：{}", status_text)?;
+        writeln!(meta, "Статус: {}", status_text)?;
 
         if let Some(score) = manager.score {
-            writeln!(meta, "评分：{:.1}", score)?;
+            writeln!(meta, "Оценка: {:.1}", score)?;
         }
         if let Some(word_count) = manager.word_count {
-            writeln!(meta, "字数：{}", word_count)?;
+            writeln!(meta, "Знаков: {}", word_count)?;
         }
         if let Some(chapter_count) = manager.chapter_count {
-            writeln!(meta, "章节：{}", chapter_count)?;
+            writeln!(meta, "Глав: {}", chapter_count)?;
         }
         if let Some(category) = manager.category.as_deref()
             && !category.trim().is_empty()
         {
-            writeln!(meta, "分类：{}", category.trim())?;
+            writeln!(meta, "Жанр: {}", category.trim())?;
         }
         if !manager.tags.trim().is_empty() {
-            writeln!(meta, "标签：{}", manager.tags)?;
+            writeln!(meta, "Теги: {}", manager.tags)?;
         }
         if let Some(read_count_text) = manager.read_count_text.as_deref()
             && !read_count_text.trim().is_empty()
         {
-            writeln!(meta, "在读：{}", read_count_text.trim())?;
+            writeln!(meta, "Читают: {}", read_count_text.trim())?;
         }
 
         if !manager.description.trim().is_empty() {
             writeln!(meta)?;
-            writeln!(meta, "简介：")?;
+            writeln!(meta, "Описание:")?;
             writeln!(meta, "{}", manager.description.trim())?;
         }
 
@@ -361,7 +361,7 @@ fn finalize_txt(
         let width = chapters.len().to_string().len().max(4);
         for (idx, ch) in chapters.iter().enumerate() {
             let chapter_id = ch.get("id").and_then(|v| v.as_str()).unwrap_or("");
-            let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("章节");
+            let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("Глава");
             let content = ch.get("content").and_then(|v| v.as_str()).unwrap_or("");
             // 缓存为 XHTML，写入 txt 时实时清洗为纯文本
             let content = ContentParser::clean_plain(content, title);
@@ -378,7 +378,7 @@ fn finalize_txt(
                 && !vol.trim().is_empty()
                 && inserted_volumes.insert(vol.trim().to_string())
             {
-                writeln!(f, "分卷：{}", vol.trim())?;
+                writeln!(f, "Том: {}", vol.trim())?;
                 writeln!(f)?;
             }
             writeln!(f, "{}", title)?;
@@ -391,45 +391,45 @@ fn finalize_txt(
 
     let mut f = File::create(path)?;
 
-    writeln!(f, "书名：{}", manager.book_name)?;
+    writeln!(f, "Название: {}", manager.book_name)?;
     if !manager.author.trim().is_empty() {
-        writeln!(f, "作者：{}", manager.author)?;
+        writeln!(f, "Автор: {}", manager.author)?;
     }
     writeln!(f, "book_id={}", manager.book_id)?;
 
     let status_text = match manager.finished {
-        Some(true) => "完结",
-        Some(false) => "连载",
-        None => "未知",
+        Some(true) => "Завершена",
+        Some(false) => "Продолжается",
+        None => "Неизвестно",
     };
-    writeln!(f, "状态：{}", status_text)?;
+    writeln!(f, "Статус: {}", status_text)?;
 
     if let Some(score) = manager.score {
-        writeln!(f, "评分：{:.1}", score)?;
+        writeln!(f, "Оценка: {:.1}", score)?;
     }
     if let Some(word_count) = manager.word_count {
-        writeln!(f, "字数：{}", word_count)?;
+        writeln!(f, "Знаков: {}", word_count)?;
     }
     if let Some(chapter_count) = manager.chapter_count {
-        writeln!(f, "章节：{}", chapter_count)?;
+        writeln!(f, "Глав: {}", chapter_count)?;
     }
     if let Some(category) = manager.category.as_deref()
         && !category.trim().is_empty()
     {
-        writeln!(f, "分类：{}", category.trim())?;
+        writeln!(f, "Жанр: {}", category.trim())?;
     }
     if !manager.tags.trim().is_empty() {
-        writeln!(f, "标签：{}", manager.tags)?;
+        writeln!(f, "Теги: {}", manager.tags)?;
     }
     if let Some(read_count_text) = manager.read_count_text.as_deref()
         && !read_count_text.trim().is_empty()
     {
-        writeln!(f, "在读：{}", read_count_text.trim())?;
+        writeln!(f, "Читают: {}", read_count_text.trim())?;
     }
 
     if !manager.description.trim().is_empty() {
         writeln!(f)?;
-        writeln!(f, "简介：")?;
+        writeln!(f, "Описание:")?;
         writeln!(f, "{}", manager.description.trim())?;
     }
 
@@ -441,7 +441,7 @@ fn finalize_txt(
 
     for ch in chapters {
         let chapter_id = ch.get("id").and_then(|v| v.as_str()).unwrap_or("");
-        let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("章节");
+        let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("Глава");
         let content = ch.get("content").and_then(|v| v.as_str()).unwrap_or("");
         // 缓存为 XHTML，写入 txt 时实时清洗为纯文本
         let content = ContentParser::clean_plain(content, title);
@@ -770,13 +770,13 @@ fn prompt_book_name_selection(manager: &BookManager) -> Option<String> {
     let mut options: Vec<(&str, String)> = Vec::new();
 
     let default_name = &manager.book_name;
-    options.push(("默认书名", default_name.clone()));
+    options.push(("Название по умолчанию", default_name.clone()));
 
     if let Some(orig) = &manager.original_book_name
         && !orig.is_empty()
         && orig != default_name
     {
-        options.push(("原始书名", orig.clone()));
+        options.push(("Оригинальное название", orig.clone()));
     }
 
     if let Some(short) = &manager.book_short_name
@@ -789,7 +789,7 @@ fn prompt_book_name_selection(manager: &BookManager) -> Option<String> {
             .as_ref()
             .is_some_and(|o| o == short);
         if !dup {
-            options.push(("短书名", short.clone()));
+            options.push(("Короткое название", short.clone()));
         }
     }
 
@@ -798,13 +798,13 @@ fn prompt_book_name_selection(manager: &BookManager) -> Option<String> {
         return None;
     }
 
-    println!("\n=== 选择书名 ===");
+    println!("\n=== Выбор названия ===");
     for (idx, (label, name)) in options.iter().enumerate() {
-        let marker = if idx == 0 { " (当前)" } else { "" };
+        let marker = if idx == 0 { " (текущее)" } else { "" };
         println!("  {}. {}: {}{}", idx + 1, label, name, marker);
     }
 
-    print!("请选择 [1]: ");
+    print!("Выберите [1]: ");
     io::stdout().flush().ok();
     let mut line = String::new();
     if io::stdin().lock().read_line(&mut line).is_err() {
@@ -834,10 +834,10 @@ fn prompt_format_selection(manager: &BookManager) -> Option<String> {
     let current = manager.config.configured_output_format_choice();
     let options = downloader::collect_output_format_options();
 
-    println!("\n=== 选择输出格式 ===");
+    println!("\n=== Выбор формата вывода ===");
     for (idx, opt) in options.iter().enumerate() {
         let marker = if opt.value == current {
-            " (当前)"
+            " (текущий)"
         } else {
             ""
         };
@@ -849,7 +849,7 @@ fn prompt_format_selection(manager: &BookManager) -> Option<String> {
         .position(|opt| opt.value == current)
         .unwrap_or(0)
         + 1;
-    print!("请选择 [{}]: ", default_idx);
+    print!("Выберите [{}]: ", default_idx);
     io::stdout().flush().ok();
     let mut line = String::new();
     if io::stdin().lock().read_line(&mut line).is_err() {

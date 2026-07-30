@@ -163,11 +163,11 @@ pub(crate) fn make_reporter(
 
         let download_bar = mp.add(ProgressBar::new(group_total as u64));
         download_bar.set_style(style.clone());
-        download_bar.set_prefix("章节下载");
+        download_bar.set_prefix("Загрузка глав");
 
         let save_bar = mp.add(ProgressBar::new(pending.len() as u64));
         save_bar.set_style(style);
-        save_bar.set_prefix("正文保存");
+        save_bar.set_prefix("Сохранение текста");
 
         Some(CliBars {
             _mp: mp,

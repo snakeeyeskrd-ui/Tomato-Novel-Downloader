@@ -1,4 +1,4 @@
-//! TUI 配置页 UI 组件。
+//! TUI config page UI.
 
 use super::*;
 
@@ -14,7 +14,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                     app.last_segment_comments_confirm_options = None;
                     app.cfg_editing = None;
                     app.cfg_edit_buffer.clear();
-                    app.status = "已取消开启段评".to_string();
+                    app.status = "Включение комментариев к абзацам отменено".to_string();
                 }
                 KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down | KeyCode::Tab => {
                     let cur = app.segment_comments_confirm_state.selected().unwrap_or(1);
@@ -27,13 +27,13 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                         if let Some((cat_idx, entry_idx)) = app.segment_comments_confirm_ctx.take()
                             && let Err(err) = super::apply_cfg_edit(app, cat_idx, entry_idx)
                         {
-                            app.status = format!("保存失败: {err}");
+                            app.status = format!("Ошибка сохранения: {err}");
                         }
                         app.cfg_editing = None;
                         app.cfg_edit_buffer.clear();
-                        app.status = "已开启段评（注意：可能触发 IP 风控，且下载更慢）".to_string();
+                        app.status = "Комментарии к абзацам включены (внимание: возможна блокировка IP, загрузка медленнее)".to_string();
                     } else {
-                        app.status = "已取消开启段评".to_string();
+                        app.status = "Включение комментариев к абзацам отменено".to_string();
                         app.segment_comments_confirm_ctx = None;
                         app.cfg_editing = None;
                         app.cfg_edit_buffer.clear();
@@ -62,14 +62,14 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                                     app.segment_comments_confirm_ctx.take()
                                     && let Err(err) = super::apply_cfg_edit(app, cat_idx, entry_idx)
                                 {
-                                    app.status = format!("保存失败: {err}");
+                                    app.status = format!("Ошибка сохранения: {err}");
                                 }
                                 app.cfg_editing = None;
                                 app.cfg_edit_buffer.clear();
                                 app.status =
-                                    "已开启段评（注意：可能触发 IP 风控，且下载更慢）".to_string();
+                                    "Комментарии к абзацам включены (внимание: возможна блокировка IP, загрузка медленнее)".to_string();
                             } else {
-                                app.status = "已取消开启段评".to_string();
+                                app.status = "Включение комментариев к абзацам отменено".to_string();
                                 app.segment_comments_confirm_ctx = None;
                                 app.cfg_editing = None;
                                 app.cfg_edit_buffer.clear();
@@ -115,7 +115,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                     KeyCode::Esc => {
                         app.cfg_editing = None;
                         app.cfg_edit_buffer.clear();
-                        app.status = "取消修改".to_string();
+                        app.status = "Изменения отменены".to_string();
                     }
                     KeyCode::Enter => {
                         if editing_bool {
@@ -142,7 +142,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                                 app.segment_comments_confirm_open = true;
                                 app.segment_comments_confirm_ctx = Some((cat_idx, entry_idx));
                                 app.segment_comments_confirm_state.select(Some(1));
-                                app.status = "确认开启段评？".to_string();
+                                app.status = "Включить комментарии к абзацам?".to_string();
                                 return Ok(());
                             }
                         }
@@ -155,7 +155,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                             app.cfg_edit_buffer = preset.name.to_string();
                         }
                         if let Err(err) = super::apply_cfg_edit(app, cat_idx, entry_idx) {
-                            app.status = format!("保存失败: {err}");
+                            app.status = format!("Ошибка сохранения: {err}");
                         } else {
                             app.cfg_editing = None;
                             app.cfg_edit_buffer.clear();
@@ -223,7 +223,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('c') => {
                         app.view = View::Home;
-                        app.status = "返回主菜单".to_string();
+                        app.status = "Вернуться в главное меню".to_string();
                         app.cfg_focus = ConfigFocus::Entry;
                     }
                     KeyCode::Tab => {
@@ -250,7 +250,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                     },
                     KeyCode::Enter if app.cfg_button_state.selected().is_some() => {
                         app.view = View::Home;
-                        app.status = "返回主菜单".to_string();
+                        app.status = "Вернуться в главное меню".to_string();
                     }
                     KeyCode::Enter => match app.cfg_focus {
                         ConfigFocus::Category => {
@@ -261,7 +261,7 @@ pub(super) fn handle_event_config(app: &mut App, event: Event) -> Result<()> {
                     },
                     KeyCode::Char('b') => {
                         app.view = View::Home;
-                        app.status = "返回主菜单".to_string();
+                        app.status = "Вернуться в главное меню".to_string();
                     }
                     _ => {}
                 }
@@ -396,12 +396,12 @@ pub(super) fn handle_mouse_config(app: &mut App, me: event::MouseEvent) -> Resul
                             app.segment_comments_confirm_open = true;
                             app.segment_comments_confirm_ctx = Some((cat_idx, entry_idx));
                             app.segment_comments_confirm_state.select(Some(1));
-                            app.status = "确认开启段评？".to_string();
+                            app.status = "Включить комментарии к абзацам?".to_string();
                             return Ok(());
                         }
 
                         if let Err(err) = super::apply_cfg_edit(app, cat_idx, entry_idx) {
-                            app.status = format!("保存失败: {err}");
+                            app.status = format!("Ошибка сохранения: {err}");
                         } else {
                             app.cfg_editing = None;
                             app.cfg_edit_buffer.clear();
@@ -437,7 +437,7 @@ pub(super) fn handle_mouse_config(app: &mut App, me: event::MouseEvent) -> Resul
                     }
                 }
 
-                // 编辑中时，点击其他区域不触发选择/跳转
+                // While editing, clicks elsewhere do not change selection/navigation
                 return Ok(());
             }
 
@@ -463,7 +463,7 @@ pub(super) fn handle_mouse_config(app: &mut App, me: event::MouseEvent) -> Resul
             {
                 app.cfg_button_state.select(Some(0));
                 app.view = View::Home;
-                app.status = "返回主菜单".to_string();
+                app.status = "Вернуться в главное меню".to_string();
                 return Ok(());
             }
 
@@ -606,12 +606,12 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
 
     let header_line = Line::from(vec![
         Span::styled(
-            "配置编辑",
+            "Редактирование настроек",
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("  |  左右/Tab 切分类, 上下选项, 回车编辑, q 返回"),
+        Span::raw("  |  ←→/Tab категории, ↑↓ пункты, Enter правка, q назад"),
     ]);
 
     let header = Paragraph::new(header_line).block(
@@ -650,7 +650,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
         .collect();
     let cat_block = Block::default()
         .borders(Borders::ALL)
-        .title("分类 (左右/Tab 切换)");
+        .title("Категории (←→/Tab)");
     frame.render_widget(cat_block.clone(), body[0]);
     let cat_inner = cat_block.inner(body[0]);
     let need_cat_scrollbar = !app.cfg_categories.is_empty()
@@ -704,7 +704,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
                     && Some(cat_i) == app.cfg_cat_state.selected()
                     && entry_i == idx
                 {
-                    spans.push(Span::raw("  [编辑中] "));
+                    spans.push(Span::raw("  [правка] "));
                     if !super::cfg_field_is_bool(entry.field) {
                         spans.push(Span::styled(
                             app.cfg_edit_buffer.clone(),
@@ -716,7 +716,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
             })
             .collect()
     } else {
-        vec![ListItem::new("无可编辑配置")]
+        vec![ListItem::new("Нет настроек для правки")]
     };
 
     let entry_highlight = if app.cfg_focus == ConfigFocus::Entry {
@@ -729,7 +729,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
 
     let entry_block = Block::default()
         .borders(Borders::ALL)
-        .title("配置项 (上下选择, 回车编辑/保存)");
+        .title("Параметры (↑↓ выбор, Enter правка/сохранение)");
     frame.render_widget(entry_block.clone(), body[1]);
     let entry_inner = entry_block.inner(body[1]);
     let entry_len = super::current_cfg_entries(app)
@@ -777,9 +777,9 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
         .constraints([Constraint::Length(18), Constraint::Min(10)])
         .split(layout[2]);
 
-    let btn_items: Vec<ListItem> = vec![ListItem::new("返回")];
+    let btn_items: Vec<ListItem> = vec![ListItem::new("Назад")];
     let btn_list = List::new(btn_items)
-        .block(Block::default().borders(Borders::ALL).title("操作"))
+        .block(Block::default().borders(Borders::ALL).title("Действия"))
         .highlight_style(
             Style::default()
                 .fg(Color::LightCyan)
@@ -818,7 +818,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("选择值(方向键/鼠标，Enter保存)"),
+                    .title("Выбор значения (стрелки/мышь, Enter — сохранить)"),
             )
             .highlight_style(
                 Style::default()
@@ -830,11 +830,11 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
         frame.render_stateful_widget(list, status_layout[0], &mut app.cfg_bool_state);
 
         msg_lines.push(Line::from(
-            "编辑中: 方向键选择 True/False，Enter 保存，Esc 取消。",
+            "Правка: стрелки True/False, Enter — сохранить, Esc — отмена.",
         ));
         let messages = Paragraph::new(msg_lines)
             .wrap(Wrap { trim: true })
-            .block(Block::default().borders(Borders::ALL).title("状态"));
+            .block(Block::default().borders(Borders::ALL).title("Статус"));
         frame.render_widget(messages, status_layout[1]);
         app.last_config_combo_list_area = None;
         app.last_config_combo_input_area = None;
@@ -855,7 +855,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
             .unwrap_or(super::AUDIOBOOK_VOICE_PRESETS);
 
         let list_items: Vec<ListItem> = if presets.is_empty() {
-            vec![ListItem::new("无预设")]
+            vec![ListItem::new("Нет пресетов")]
         } else {
             presets.iter().map(|p| ListItem::new(p.label)).collect()
         };
@@ -872,7 +872,7 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("发音人预设(↑↓/Tab 切换)"),
+                    .title("Пресеты голоса (↑↓/Tab)"),
             )
             .highlight_style(list_highlight)
             .highlight_symbol(">> ");
@@ -880,9 +880,9 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
         frame.render_stateful_widget(list, status_layout[0], &mut app.cfg_combo_state);
 
         let input_title = if app.cfg_combo_focus == ConfigComboFocus::Input {
-            "自定义输入(Enter 保存)"
+            "Свой ввод (Enter — сохранить)"
         } else {
-            "自定义输入(Tab 进入)"
+            "Свой ввод (Tab — войти)"
         };
         let input_border = if app.cfg_combo_focus == ConfigComboFocus::Input {
             Style::default().fg(Color::Yellow)
@@ -907,16 +907,16 @@ pub(super) fn draw_config(frame: &mut ratatui::Frame, app: &mut App) {
         app.last_config_combo_input_area = None;
 
         if app.cfg_editing.is_some() {
-            msg_lines.push(Line::from("编辑中: 回车保存，Esc 取消。"));
+            msg_lines.push(Line::from("Правка: Enter — сохранить, Esc — отмена."));
         } else {
             msg_lines.push(Line::from(
-                "左右/Tab 切换分类，↑↓ 选择，Enter 编辑，鼠标点击或按钮返回。",
+                "←→/Tab категории, ↑↓ выбор, Enter правка, клик или кнопка — назад.",
             ));
         }
 
         let messages = Paragraph::new(msg_lines)
             .wrap(Wrap { trim: true })
-            .block(Block::default().borders(Borders::ALL).title("状态"));
+            .block(Block::default().borders(Borders::ALL).title("Статус"));
 
         frame.render_widget(messages, footer[1]);
     }
@@ -948,7 +948,7 @@ fn render_segment_comments_confirm_modal(frame: &mut ratatui::Frame, app: &mut A
 
     let block = Block::default()
         .borders(Borders::ALL)
-        .title("确认开启段评？")
+        .title("Включить комментарии к абзацам?")
         .border_style(Style::default().fg(Color::Yellow));
     frame.render_widget(block, modal);
 
@@ -966,18 +966,18 @@ fn render_segment_comments_confirm_modal(frame: &mut ratatui::Frame, app: &mut A
         .split(inner);
 
     let msg = vec![
-        Line::from("段评会额外发送大量请求，容易触发 IP 风控。"),
-        Line::from("同时下载会明显变慢（尤其是开启头像/图片下载时）。"),
-        Line::from("建议：segment_comments_workers=1，关闭头像/图片下载。"),
+        Line::from("Комментарии к абзацам дают много лишних запросов и риск блокировки IP."),
+        Line::from("Загрузка заметно замедлится (особенно с аватарами/картинками)."),
+        Line::from("Совет: segment_comments_workers=1, отключите аватары/картинки."),
         Line::from(""),
-        Line::from("Enter 确认 / Esc 取消 / ←→ 切换"),
+        Line::from("Enter — подтвердить / Esc — отмена / ←→ переключение"),
     ];
     let p = Paragraph::new(msg).wrap(Wrap { trim: true });
     frame.render_widget(p, parts[0]);
 
-    let items = vec![ListItem::new("仍然开启"), ListItem::new("取消")];
+    let items = vec![ListItem::new("Всё равно включить"), ListItem::new("Отмена")];
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("选择"))
+        .block(Block::default().borders(Borders::ALL).title("Выбор"))
         .highlight_style(
             Style::default()
                 .fg(Color::LightCyan)

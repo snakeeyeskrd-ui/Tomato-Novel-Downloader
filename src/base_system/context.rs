@@ -19,11 +19,11 @@ pub const OUTPUT_FORMAT_ASK_AFTER_DOWNLOAD: &str = "ask_after_download";
 
 pub fn output_format_choices() -> &'static [(&'static str, &'static str)] {
     static CHOICES: [(&str, &str); 5] = [
-        (OUTPUT_FORMAT_TXT, "txt 格式"),
-        (OUTPUT_FORMAT_EPUB, "epub 格式"),
-        (OUTPUT_FORMAT_PDF, "pdf 格式"),
-        (OUTPUT_FORMAT_BULK_TXT, "散装文件"),
-        (OUTPUT_FORMAT_ASK_AFTER_DOWNLOAD, "下载后选择"),
+        (OUTPUT_FORMAT_TXT, "Формат txt"),
+        (OUTPUT_FORMAT_EPUB, "Формат epub"),
+        (OUTPUT_FORMAT_PDF, "Формат pdf"),
+        (OUTPUT_FORMAT_BULK_TXT, "Отдельные файлы"),
+        (OUTPUT_FORMAT_ASK_AFTER_DOWNLOAD, "Спросить после загрузки"),
     ];
     &CHOICES
 }
@@ -34,14 +34,27 @@ pub fn output_format_label(choice: &str) -> &'static str {
         .iter()
         .find(|(value, _)| *value == normalized)
         .map(|(_, label)| *label)
-        .unwrap_or("txt 格式")
+        .unwrap_or("Формат txt")
 }
 
 pub fn output_format_value_from_label(label: &str) -> Option<&'static str> {
-    output_format_choices()
+    let trimmed = label.trim();
+    if let Some(value) = output_format_choices()
         .iter()
-        .find(|(_, candidate)| *candidate == label)
+        .find(|(_, candidate)| *candidate == trimmed)
         .map(|(value, _)| *value)
+    {
+        return Some(value);
+    }
+    // Backward compatibility with pre-translation Chinese labels.
+    match trimmed {
+        "txt 格式" => Some(OUTPUT_FORMAT_TXT),
+        "epub 格式" => Some(OUTPUT_FORMAT_EPUB),
+        "pdf 格式" => Some(OUTPUT_FORMAT_PDF),
+        "散装文件" => Some(OUTPUT_FORMAT_BULK_TXT),
+        "下载后选择" | "下载完后选择" => Some(OUTPUT_FORMAT_ASK_AFTER_DOWNLOAD),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -230,179 +243,179 @@ impl ConfigSpec for Config {
         static FIELDS: [FieldMeta; 44] = [
             FieldMeta {
                 name: "old_cli",
-                description: "是否使用老版本命令行界面",
+                description: "Использовать старый интерфейс командной строки",
             },
             FieldMeta {
                 name: "max_workers",
-                description: "最大并发线程数",
+                description: "Максимальное число параллельных потоков",
             },
             FieldMeta {
                 name: "request_timeout",
-                description: "请求超时时间（秒）",
+                description: "Таймаут запроса (секунды)",
             },
             FieldMeta {
                 name: "max_retries",
-                description: "最大重试次数",
+                description: "Максимальное число повторов",
             },
             FieldMeta {
                 name: "max_wait_time",
-                description: "最大冷却时间, 单位ms",
+                description: "Максимальная пауза между запросами, мс",
             },
             FieldMeta {
                 name: "min_wait_time",
-                description: "最小冷却时间, 单位ms",
+                description: "Минимальная пауза между запросами, мс",
             },
             FieldMeta {
                 name: "min_connect_timeout",
-                description: "最小连接超时时间",
+                description: "Минимальный таймаут соединения",
             },
             FieldMeta {
                 name: "novel_format",
-                description: "保存小说格式, 可选: [txt, epub, pdf]",
+                description: "Формат сохранения новеллы, варианты: [txt, epub, pdf]",
             },
             FieldMeta {
                 name: "bulk_files",
-                description: "是否以散装形式保存小说",
+                description: "Сохранять новеллу отдельными файлами по главам",
             },
             FieldMeta {
                 name: "auto_clear_dump",
-                description: "是否自动清理缓存文件",
+                description: "Автоматически очищать файлы кэша",
             },
             FieldMeta {
                 name: "auto_open_downloaded_files",
-                description: "下载完成后自动用默认应用打开生成的小说文件/文件夹（txt/epub）",
+                description: "После загрузки автоматически открывать файл/папку новеллы в приложении по умолчанию (txt/epub)",
             },
             FieldMeta {
                 name: "enable_audiobook",
-                description: "是否使用 Edge TTS 生成有声小说",
+                description: "Генерировать аудиокнигу через Edge TTS",
             },
             FieldMeta {
                 name: "audiobook_voice",
-                description: "Edge TTS 发音人",
+                description: "Голос Edge TTS",
             },
             FieldMeta {
                 name: "audiobook_rate",
-                description: "Edge TTS 语速调整，例如 +0%、-10%",
+                description: "Скорость речи Edge TTS, например +0%, -10%",
             },
             FieldMeta {
                 name: "audiobook_volume",
-                description: "Edge TTS 音量调整，例如 +0%、-10%",
+                description: "Громкость Edge TTS, например +0%, -10%",
             },
             FieldMeta {
                 name: "audiobook_pitch",
-                description: "Edge TTS 音调调整（留空表示默认）",
+                description: "Высота тона Edge TTS (пусто — по умолчанию)",
             },
             FieldMeta {
                 name: "audiobook_format",
-                description: "有声小说输出格式，可选 mp3 或 wav",
+                description: "Формат аудиокниги: mp3 или wav",
             },
             FieldMeta {
                 name: "audiobook_concurrency",
-                description: "Edge TTS 有声小说并发生成的最大章节数",
+                description: "Максимум глав, генерируемых параллельно через Edge TTS",
             },
             FieldMeta {
                 name: "audiobook_tts_provider",
-                description: "TTS 服务类型，可选 edge/third_party",
+                description: "Тип TTS-сервиса: edge или third_party",
             },
             FieldMeta {
                 name: "audiobook_tts_api_url",
-                description: "第三方 TTS API 地址（可填写本地服务，如 http://localhost:8000）",
+                description: "Адрес стороннего TTS API (можно локальный, например http://localhost:8000)",
             },
             FieldMeta {
                 name: "audiobook_tts_api_token",
-                description: "第三方 TTS API Token（如无可留空）",
+                description: "Токен стороннего TTS API (можно оставить пустым)",
             },
             FieldMeta {
                 name: "audiobook_tts_model",
-                description: "第三方 TTS 模型名称或 ID",
+                description: "Имя или ID модели стороннего TTS",
             },
             FieldMeta {
                 name: "save_path",
-                description: "保存路径",
+                description: "Путь сохранения",
             },
             FieldMeta {
                 name: "use_official_api",
-                description: "使用官方API",
+                description: "Использовать официальный API",
             },
             FieldMeta {
                 name: "api_endpoints",
-                description: "API列表",
+                description: "Список API",
             },
             FieldMeta {
                 name: "enable_segment_comments",
-                description: "是否下载段评（段落评论）",
+                description: "Скачивать комментарии к абзацам",
             },
             FieldMeta {
                 name: "segment_comments_top_n",
-                description: "每段最多保存的评论数",
+                description: "Максимум комментариев на абзац",
             },
             FieldMeta {
                 name: "segment_comments_workers",
-                description: "段评抓取的并发线程数（每章内）",
+                description: "Число потоков для загрузки комментариев к абзацам (внутри главы)",
             },
             FieldMeta {
                 name: "download_comment_images",
-                description: "是否下载评论区图片（不含头像）",
+                description: "Скачивать изображения из комментариев (без аватаров)",
             },
             FieldMeta {
                 name: "download_comment_avatars",
-                description: "是否下载评论区头像",
+                description: "Скачивать аватары из комментариев",
             },
             FieldMeta {
                 name: "media_download_workers",
-                description: "评论图片/头像下载并发线程数",
+                description: "Число потоков для загрузки изображений/аватаров комментариев",
             },
             FieldMeta {
                 name: "blocked_media_domains",
-                description: "拒绝下载的图片域名（包含匹配）",
+                description: "Домены изображений, которые не скачивать (частичное совпадение)",
             },
             FieldMeta {
                 name: "force_convert_images_to_jpeg",
-                description: "是否强制将所有下载图片转码为 JPEG",
+                description: "Принудительно перекодировать все скачанные изображения в JPEG",
             },
             FieldMeta {
                 name: "jpeg_retry_convert",
-                description: "若返回非 JPEG 且可解码则转码为 JPEG 保存",
+                description: "Если ответ не JPEG, но декодируется — сохранить как JPEG",
             },
             FieldMeta {
                 name: "jpeg_quality",
-                description: "JPEG 转码质量 (0-100)",
+                description: "Качество JPEG (0–100)",
             },
             FieldMeta {
                 name: "convert_heic_to_jpeg",
-                description: "检测到 HEIC/HEIF 时转码为 JPEG",
+                description: "При обнаружении HEIC/HEIF перекодировать в JPEG",
             },
             FieldMeta {
                 name: "keep_heic_original",
-                description: "无法转码时是否保留 .heic/.heif",
+                description: "Сохранять .heic/.heif, если перекодирование невозможно",
             },
             FieldMeta {
                 name: "first_line_indent_em",
-                description: "EPUB 段落首行缩进 em 数",
+                description: "Отступ первой строки абзаца EPUB в em",
             },
             FieldMeta {
                 name: "media_limit_per_chapter",
-                description: "每章最多下载的媒体数（0 表示不限制）",
+                description: "Максимум медиа на главу (0 — без ограничения)",
             },
             FieldMeta {
                 name: "media_max_dimension_px",
-                description: "图片最长边像素上限，>0 时缩放并转成 JPEG",
+                description: "Макс. длинная сторона изображения в пикселях; при >0 масштабировать и сохранить как JPEG",
             },
             FieldMeta {
                 name: "allow_overwrite_files",
-                description: "是否允许覆盖已存在的文件",
+                description: "Разрешить перезапись существующих файлов",
             },
             FieldMeta {
                 name: "preferred_book_name_field",
-                description: "优先使用的书名字段 (book_name/original_book_name/book_short_name/ask_after_download)",
+                description: "Предпочтительное поле названия (book_name/original_book_name/book_short_name/ask_after_download)",
             },
             FieldMeta {
                 name: "pdf_font_path",
-                description: "PDF 字体文件路径, 留空自动检测系统 CJK 字体",
+                description: "Путь к шрифту PDF; пусто — автоопределение системного CJK-шрифта",
             },
             FieldMeta {
                 name: "ask_format_after_download",
-                description: "是否在下载完成后询问用户选择输出格式（true 时可选 txt/epub/pdf/散装文件）",
+                description: "Спрашивать формат вывода после загрузки (true: txt/epub/pdf/отдельные файлы)",
             },
         ];
         &FIELDS
@@ -460,7 +473,7 @@ impl Config {
                 }
             }
             _ => {
-                return Err("保存格式仅支持 txt/epub/pdf/散装文件/下载后选择".to_string());
+                return Err("Поддерживаются только форматы: txt/epub/pdf/отдельные файлы/спросить после загрузки".to_string());
             }
         }
 

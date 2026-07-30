@@ -1,6 +1,6 @@
-//! 无 UI 配置编辑器。
+//! Редактор конфигурации в режиме без UI.
 //!
-//! 提供交互式菜单修改 `config.yml`。
+//! Интерактивное меню для изменения `config.yml`.
 
 use std::fs;
 use std::path::Path;
@@ -70,198 +70,198 @@ struct ConfigOption {
 }
 
 pub(super) fn show_config_menu(config: &mut Config) -> Result<()> {
-    // 参照 old_main.py 的 option_defs 顺序
+    // Порядок как в option_defs из old_main.py
     const OPTS: &[ConfigOption] = &[
         ConfigOption {
-            name: "保存路径",
+            name: "Путь сохранения",
             field: ConfigField::SavePath,
             ty: ConfigValueType::String,
         },
         ConfigOption {
-            name: "小说保存格式",
+            name: "Формат сохранения новеллы",
             field: ConfigField::NovelFormat,
             ty: ConfigValueType::Selection,
         },
         ConfigOption {
-            name: "是否自动清理缓存文件",
+            name: "Автоочистка кэша",
             field: ConfigField::AutoClearDump,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "是否允许覆盖已存在的文件",
+            name: "Разрешить перезапись существующих файлов",
             field: ConfigField::AllowOverwriteFiles,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "优先书名字段",
+            name: "Предпочтительное поле названия",
             field: ConfigField::PreferredBookNameField,
             ty: ConfigValueType::Selection,
         },
         ConfigOption {
-            name: "是否生成有声小说",
+            name: "Создавать аудиокнигу",
             field: ConfigField::EnableAudiobook,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "有声小说发音人",
+            name: "Голос аудиокниги",
             field: ConfigField::AudiobookVoice,
             ty: ConfigValueType::String,
         },
         ConfigOption {
-            name: "有声小说语速(如+0%)",
+            name: "Скорость речи аудиокниги (напр. +0%)",
             field: ConfigField::AudiobookRate,
             ty: ConfigValueType::String,
         },
         ConfigOption {
-            name: "有声小说音量(如+0%)",
+            name: "Громкость аудиокниги (напр. +0%)",
             field: ConfigField::AudiobookVolume,
             ty: ConfigValueType::String,
         },
         ConfigOption {
-            name: "有声小说音调(如+2Hz/-1st, 可留空)",
+            name: "Высота тона аудиокниги (напр. +2Hz/-1st, можно оставить пустым)",
             field: ConfigField::AudiobookPitch,
             ty: ConfigValueType::String,
         },
         ConfigOption {
-            name: "有声小说并发数",
+            name: "Параллелизм аудиокниги",
             field: ConfigField::AudiobookConcurrency,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "有声小说格式(mp3/wav)",
+            name: "Формат аудиокниги (mp3/wav)",
             field: ConfigField::AudiobookFormat,
             ty: ConfigValueType::String,
         },
         ConfigOption {
-            name: "最大线程数",
+            name: "Макс. число потоков",
             field: ConfigField::MaxWorkers,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "请求超时(秒)",
+            name: "Таймаут запроса (сек)",
             field: ConfigField::RequestTimeout,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "最大重试次数",
+            name: "Макс. число повторов",
             field: ConfigField::MaxRetries,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "最小等待时间(ms)",
+            name: "Мин. время ожидания (мс)",
             field: ConfigField::MinWaitTime,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "最大等待时间(ms)",
+            name: "Макс. время ожидания (мс)",
             field: ConfigField::MaxWaitTime,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "最小连接超时时间",
+            name: "Мин. таймаут соединения",
             field: ConfigField::MinConnectTimeout,
             ty: ConfigValueType::Float,
         },
         ConfigOption {
-            name: "是否使用官方API",
+            name: "Использовать официальное API",
             field: ConfigField::UseOfficialApi,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "自定义API列表(逗号分隔)",
+            name: "Список своих API (через запятую)",
             field: ConfigField::ApiEndpoints,
             ty: ConfigValueType::List,
         },
         ConfigOption {
-            name: "是否下载段评",
+            name: "Скачивать комментарии к абзацам",
             field: ConfigField::EnableSegmentComments,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "段评每段最多条数",
+            name: "Макс. комментариев на абзац",
             field: ConfigField::SegmentCommentsTopN,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "段评并发线程数",
+            name: "Потоки для комментариев к абзацам",
             field: ConfigField::SegmentCommentsWorkers,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "是否下载评论区图片",
+            name: "Скачивать изображения комментариев",
             field: ConfigField::DownloadCommentImages,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "是否下载评论区头像",
+            name: "Скачивать аватары комментариев",
             field: ConfigField::DownloadCommentAvatars,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "评论图片下载线程数",
+            name: "Потоки загрузки изображений комментариев",
             field: ConfigField::MediaDownloadWorkers,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "图片域名黑名单(逗号分隔)",
+            name: "Чёрный список доменов изображений (через запятую)",
             field: ConfigField::BlockedMediaDomains,
             ty: ConfigValueType::List,
         },
         ConfigOption {
-            name: "强制所有图片转JPEG",
+            name: "Принудительно конвертировать все изображения в JPEG",
             field: ConfigField::ForceConvertImagesToJpeg,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "非JPEG尝试转JPEG",
+            name: "Пытаться конвертировать не-JPEG в JPEG",
             field: ConfigField::JpegRetryConvert,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "JPEG质量(0-100)",
+            name: "Качество JPEG (0-100)",
             field: ConfigField::JpegQuality,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "HEIC转JPEG",
+            name: "Конвертировать HEIC в JPEG",
             field: ConfigField::ConvertHeicToJpeg,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "保留原始HEIC文件",
+            name: "Сохранять исходные HEIC-файлы",
             field: ConfigField::KeepHeicOriginal,
             ty: ConfigValueType::Bool,
         },
         ConfigOption {
-            name: "每章媒体数量上限(0为不限制)",
+            name: "Лимит медиа на главу (0 — без ограничений)",
             field: ConfigField::MediaLimitPerChapter,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "图片最长边像素上限(>0生效)",
+            name: "Макс. длинная сторона изображения в пикселях (>0 включает)",
             field: ConfigField::MediaMaxDimensionPx,
             ty: ConfigValueType::Int,
         },
         ConfigOption {
-            name: "EPUB首行缩进(em)",
+            name: "Отступ первой строки EPUB (em)",
             field: ConfigField::FirstLineIndentEm,
             ty: ConfigValueType::Float,
         },
         ConfigOption {
-            name: "是否使用老版本命令行界面(需重启)",
+            name: "Использовать старый CLI (нужен перезапуск)",
             field: ConfigField::OldCli,
             ty: ConfigValueType::Bool,
         },
     ];
 
     loop {
-        println!("\n=== 配置选项 ===");
+        println!("\n=== Параметры конфигурации ===");
         for (idx, opt) in OPTS.iter().enumerate() {
             let mut name = opt.name.to_string();
             if matches!(opt.field, ConfigField::EnableSegmentComments)
                 && config.novel_format.eq_ignore_ascii_case("txt")
             {
-                name.push_str("（TXT 不支持）");
+                name.push_str(" (TXT не поддерживается)");
             }
             println!(
                 "{}. {}: {}",
@@ -270,41 +270,41 @@ pub(super) fn show_config_menu(config: &mut Config) -> Result<()> {
                 config_value_display(config, opt.field)
             );
         }
-        println!("0. 返回主菜单");
+        println!("0. Вернуться в главное меню");
 
-        let choice = super::read_line("\n请选择要修改的配置项编号: ")?;
+        let choice = super::read_line("\nВыберите номер параметра для изменения: ")?;
         let choice = choice.trim();
         if choice == "0" {
             break;
         }
         let Ok(idx) = choice.parse::<usize>() else {
-            println!("请输入数字编号");
+            println!("Введите числовой номер");
             continue;
         };
         if idx == 0 || idx > OPTS.len() {
-            println!("编号超出范围");
+            println!("Номер вне диапазона");
             continue;
         }
         let opt = OPTS[idx - 1];
         let cur = config_value_display(config, opt.field);
 
         let new_text = if matches!(opt.ty, ConfigValueType::Selection) {
-            // 选项模式：列出可选值让用户选择
+            // Режим выбора: показать варианты и дать выбрать номер
             match show_selection_prompt(opt.field, &cur)? {
                 Some(v) => v,
                 None => {
-                    println!("已取消修改");
+                    println!("Изменение отменено");
                     continue;
                 }
             }
         } else {
             let input = super::read_line(&format!(
-                "当前 {} = {}\n输入新值(留空取消): ",
+                "Сейчас {} = {}\nВведите новое значение (пусто — отмена): ",
                 opt.name, cur
             ))?;
             let trimmed = input.trim().to_string();
             if trimmed.is_empty() {
-                println!("已取消修改");
+                println!("Изменение отменено");
                 continue;
             }
             trimmed
@@ -312,11 +312,11 @@ pub(super) fn show_config_menu(config: &mut Config) -> Result<()> {
 
         apply_config_edit(config, opt, &new_text)?;
 
-        // 持久化到 config.yml
+        // Сохранить в config.yml
         write_with_comments(config, Path::new(<Config as ConfigSpec>::FILE_NAME))
             .map_err(|e| anyhow!(e.to_string()))?;
         println!(
-            "已更新 {} = {}",
+            "Обновлено {} = {}",
             opt.name,
             config_value_display(config, opt.field)
         );
@@ -334,7 +334,7 @@ fn config_value_display(config: &Config, field: ConfigField) -> String {
         ConfigField::AutoClearDump => config.auto_clear_dump.to_string(),
         ConfigField::AllowOverwriteFiles => config.allow_overwrite_files.to_string(),
         ConfigField::PreferredBookNameField => {
-            book_name_field_to_chinese(&config.preferred_book_name_field).to_string()
+            book_name_field_display(&config.preferred_book_name_field).to_string()
         }
         ConfigField::EnableAudiobook => config.enable_audiobook.to_string(),
         ConfigField::AudiobookVoice => config.audiobook_voice.clone(),
@@ -382,13 +382,13 @@ fn apply_config_edit(config: &mut Config, opt: ConfigOption, text: &str) -> Resu
         ConfigValueType::Int => {
             let v: i64 = text
                 .parse()
-                .map_err(|_| anyhow!("类型转换失败：需要整数"))?;
+                .map_err(|_| anyhow!("Ошибка преобразования типа: нужно целое число"))?;
             set_int(config, opt.field, v)?;
         }
         ConfigValueType::Float => {
             let v: f64 = text
                 .parse()
-                .map_err(|_| anyhow!("类型转换失败：需要小数"))?;
+                .map_err(|_| anyhow!("Ошибка преобразования типа: нужно число с дробной частью"))?;
             set_float(config, opt.field, v)?;
         }
         ConfigValueType::String => {
@@ -419,7 +419,9 @@ fn set_bool(config: &mut Config, field: ConfigField, v: bool) -> Result<()> {
         ConfigField::EnableSegmentComments => {
             if v && config.novel_format.eq_ignore_ascii_case("txt") {
                 config.novel_format = "epub".to_string();
-                println!("已自动将保存格式切换为 EPUB 以启用段评功能。");
+                println!(
+                    "Формат сохранения автоматически переключён на EPUB, чтобы включить комментарии к абзацам."
+                );
             }
             config.enable_segment_comments = v;
         }
@@ -430,7 +432,7 @@ fn set_bool(config: &mut Config, field: ConfigField, v: bool) -> Result<()> {
         ConfigField::ConvertHeicToJpeg => config.convert_heic_to_jpeg = v,
         ConfigField::KeepHeicOriginal => config.keep_heic_original = v,
         ConfigField::OldCli => config.old_cli = v,
-        _ => return Err(anyhow!("该字段不是 bool")),
+        _ => return Err(anyhow!("Это поле не является bool")),
     }
     Ok(())
 }
@@ -439,85 +441,97 @@ fn set_int(config: &mut Config, field: ConfigField, v: i64) -> Result<()> {
     match field {
         ConfigField::MaxWorkers => {
             if v <= 0 {
-                return Err(anyhow!("最大线程数必须大于 0"));
+                return Err(anyhow!("Макс. число потоков должно быть больше 0"));
             }
             config.max_workers = v as usize;
         }
         ConfigField::RequestTimeout => {
             if v <= 0 {
-                return Err(anyhow!("请求超时必须大于 0"));
+                return Err(anyhow!("Таймаут запроса должен быть больше 0"));
             }
             config.request_timeout = v as u64;
         }
         ConfigField::MaxRetries => {
             if v < 0 {
-                return Err(anyhow!("最大重试次数不能为负"));
+                return Err(anyhow!("Макс. число повторов не может быть отрицательным"));
             }
             config.max_retries = v as u32;
         }
         ConfigField::MinWaitTime => {
             if v < 0 {
-                return Err(anyhow!("最小等待时间不能为负"));
+                return Err(anyhow!("Мин. время ожидания не может быть отрицательным"));
             }
             let v = v as u64;
             if v > config.max_wait_time {
-                return Err(anyhow!("最小等待时间不能超过最大等待时间"));
+                return Err(anyhow!(
+                    "Мин. время ожидания не может превышать макс. время ожидания"
+                ));
             }
             config.min_wait_time = v;
         }
         ConfigField::MaxWaitTime => {
             if v < 0 {
-                return Err(anyhow!("最大等待时间不能为负"));
+                return Err(anyhow!("Макс. время ожидания не может быть отрицательным"));
             }
             let v = v as u64;
             if v < config.min_wait_time {
-                return Err(anyhow!("最大等待时间不能小于最小等待时间"));
+                return Err(anyhow!(
+                    "Макс. время ожидания не может быть меньше мин. времени ожидания"
+                ));
             }
             config.max_wait_time = v;
         }
         ConfigField::AudiobookConcurrency => {
             if v <= 0 {
-                return Err(anyhow!("有声小说并发数必须大于 0"));
+                return Err(anyhow!("Параллелизм аудиокниги должен быть больше 0"));
             }
             config.audiobook_concurrency = v as usize;
         }
         ConfigField::SegmentCommentsTopN => {
             if v <= 0 {
-                return Err(anyhow!("段评条数上限必须大于 0"));
+                return Err(anyhow!(
+                    "Лимит комментариев к абзацам должен быть больше 0"
+                ));
             }
             config.segment_comments_top_n = v as usize;
         }
         ConfigField::SegmentCommentsWorkers => {
             if v <= 0 {
-                return Err(anyhow!("段评线程数必须大于 0"));
+                return Err(anyhow!(
+                    "Число потоков для комментариев к абзацам должно быть больше 0"
+                ));
             }
             config.segment_comments_workers = v as usize;
         }
         ConfigField::MediaDownloadWorkers => {
             if v <= 0 {
-                return Err(anyhow!("媒体线程数必须大于 0"));
+                return Err(anyhow!("Число медиа-потоков должно быть больше 0"));
             }
             config.media_download_workers = v as usize;
         }
         ConfigField::JpegQuality => {
             if !(0..=100).contains(&v) {
-                return Err(anyhow!("JPEG质量需在 0-100 之间"));
+                return Err(anyhow!("Качество JPEG должно быть в диапазоне 0–100"));
             }
             config.jpeg_quality = v as u8;
         }
         ConfigField::MediaLimitPerChapter => {
             if v < 0 {
-                return Err(anyhow!("每章媒体数量上限不能为负"));
+                return Err(anyhow!(
+                    "Лимит медиа на главу не может быть отрицательным"
+                ));
             }
             config.media_limit_per_chapter = v as usize;
         }
         ConfigField::MediaMaxDimensionPx => {
             if v < 0 {
-                return Err(anyhow!("图片最长边像素上限不能为负"));
+                return Err(anyhow!(
+                    "Макс. длинная сторона изображения не может быть отрицательной"
+                ));
             }
             config.media_max_dimension_px = v as u32;
         }
-        _ => return Err(anyhow!("该字段不是 int")),
+        _ => return Err(anyhow!("Это поле не является int")),
     }
     Ok(())
 }
@@ -526,17 +540,17 @@ fn set_float(config: &mut Config, field: ConfigField, v: f64) -> Result<()> {
     match field {
         ConfigField::MinConnectTimeout => {
             if v <= 0.0 {
-                return Err(anyhow!("最小连接超时时间必须大于 0"));
+                return Err(anyhow!("Мин. таймаут соединения должен быть больше 0"));
             }
             config.min_connect_timeout = v;
         }
         ConfigField::FirstLineIndentEm => {
             if v < 0.0 {
-                return Err(anyhow!("缩进不能为负"));
+                return Err(anyhow!("Отступ не может быть отрицательным"));
             }
             config.first_line_indent_em = v as f32;
         }
-        _ => return Err(anyhow!("该字段不是 float")),
+        _ => return Err(anyhow!("Это поле не является float")),
     }
     Ok(())
 }
@@ -546,9 +560,9 @@ fn set_string(config: &mut Config, field: ConfigField, v: &str) -> Result<()> {
         ConfigField::SavePath => {
             let p = v.trim();
             if p.is_empty() {
-                return Err(anyhow!("保存路径不能为空"));
+                return Err(anyhow!("Путь сохранения не может быть пустым"));
             }
-            fs::create_dir_all(p).with_context(|| format!("创建目录失败: {}", p))?;
+            fs::create_dir_all(p).with_context(|| format!("Не удалось создать каталог: {}", p))?;
             config.save_path = p.to_string();
         }
         ConfigField::NovelFormat => {
@@ -558,7 +572,9 @@ fn set_string(config: &mut Config, field: ConfigField, v: &str) -> Result<()> {
                 .map_err(anyhow::Error::msg)?;
             if config.novel_format == "txt" && config.enable_segment_comments {
                 config.enable_segment_comments = false;
-                println!("已自动关闭段评以兼容 TXT 格式。");
+                println!(
+                    "Комментарии к абзацам автоматически отключены для совместимости с форматом TXT."
+                );
             }
         }
         ConfigField::AudiobookVoice => config.audiobook_voice = v.to_string(),
@@ -568,16 +584,15 @@ fn set_string(config: &mut Config, field: ConfigField, v: &str) -> Result<()> {
         ConfigField::AudiobookFormat => {
             let lower = v.trim().to_ascii_lowercase();
             if lower != "mp3" && lower != "wav" {
-                return Err(anyhow!("有声小说格式仅支持 mp3/wav"));
+                return Err(anyhow!("Формат аудиокниги поддерживает только mp3/wav"));
             }
             config.audiobook_format = lower;
         }
         ConfigField::PreferredBookNameField => {
-            // 尝试从中文转换，如果失败则尝试直接使用英文
-            let field_name = if let Some(english) = chinese_to_book_name_field(v.trim()) {
+            // Сначала пробуем отображаемое имя, иначе — английское имя поля
+            let field_name = if let Some(english) = display_to_book_name_field(v.trim()) {
                 english
             } else {
-                // 如果不是中文，检查是否是有效的英文字段名
                 let lower = v.trim().to_ascii_lowercase();
                 if lower == "book_name"
                     || lower == "original_book_name"
@@ -587,13 +602,13 @@ fn set_string(config: &mut Config, field: ConfigField, v: &str) -> Result<()> {
                     lower
                 } else {
                     return Err(anyhow!(
-                        "优先书名字段仅支持：默认书名、原始书名、短书名、下载完后选择"
+                        "Предпочтительное поле названия поддерживает только: Название по умолчанию, Исходное название, Короткое название, Выбрать после загрузки"
                     ));
                 }
             };
             config.preferred_book_name_field = field_name;
         }
-        _ => return Err(anyhow!("该字段不是 string")),
+        _ => return Err(anyhow!("Это поле не является string")),
     }
     Ok(())
 }
@@ -602,80 +617,80 @@ fn set_list(config: &mut Config, field: ConfigField, v: Vec<String>) -> Result<(
     match field {
         ConfigField::ApiEndpoints => config.api_endpoints = v,
         ConfigField::BlockedMediaDomains => config.blocked_media_domains = v,
-        _ => return Err(anyhow!("该字段不是 list")),
+        _ => return Err(anyhow!("Это поле не является list")),
     }
     Ok(())
 }
 
-/// 将书名字段的英文名转换为中文显示名
-fn book_name_field_to_chinese(field: &str) -> &'static str {
+/// Преобразует английское имя поля названия в отображаемое имя.
+fn book_name_field_display(field: &str) -> &'static str {
     match field {
-        "book_name" => "默认书名",
-        "original_book_name" => "原始书名",
-        "book_short_name" => "短书名",
-        "ask_after_download" => "下载完后选择",
-        _ => "默认书名",
+        "book_name" => "Название по умолчанию",
+        "original_book_name" => "Исходное название",
+        "book_short_name" => "Короткое название",
+        "ask_after_download" => "Выбрать после загрузки",
+        _ => "Название по умолчанию",
     }
 }
 
-/// 将中文显示名转换为书名字段的英文名
-fn chinese_to_book_name_field(chinese: &str) -> Option<String> {
-    match chinese {
-        "默认书名" => Some("book_name".to_string()),
-        "原始书名" => Some("original_book_name".to_string()),
-        "短书名" => Some("book_short_name".to_string()),
-        "下载完后选择" => Some("ask_after_download".to_string()),
+/// Преобразует отображаемое имя поля названия в английское имя.
+fn display_to_book_name_field(display: &str) -> Option<String> {
+    match display {
+        "Название по умолчанию" => Some("book_name".to_string()),
+        "Исходное название" => Some("original_book_name".to_string()),
+        "Короткое название" => Some("book_short_name".to_string()),
+        "Выбрать после загрузки" => Some("ask_after_download".to_string()),
         _ => None,
     }
 }
 
-/// 选项模式：展示可选项让用户选择编号
+/// Режим выбора: показать варианты и дать выбрать номер.
 fn show_selection_prompt(field: ConfigField, current: &str) -> Result<Option<String>> {
     match field {
         ConfigField::NovelFormat => {
-            println!("\n当前: {}", current);
+            println!("\nСейчас: {}", current);
             for (idx, (_, label)) in output_format_choices().iter().enumerate() {
                 println!("  {}. {}", idx + 1, label);
             }
-            println!("  0. 取消");
-            let choice = super::read_line("请选择: ")?;
+            println!("  0. Отмена");
+            let choice = super::read_line("Выберите: ")?;
             let choice = choice.trim();
             if choice == "0" || choice.is_empty() {
                 return Ok(None);
             }
             let Ok(idx) = choice.parse::<usize>() else {
-                println!("请输入数字编号");
+                println!("Введите числовой номер");
                 return Ok(None);
             };
             if idx == 0 || idx > output_format_choices().len() {
-                println!("编号超出范围");
+                println!("Номер вне диапазона");
                 return Ok(None);
             }
             Ok(Some(output_format_choices()[idx - 1].0.to_string()))
         }
         ConfigField::PreferredBookNameField => {
             const OPTIONS: &[(&str, &str)] = &[
-                ("默认书名", "book_name"),
-                ("原始书名", "original_book_name"),
-                ("短书名", "book_short_name"),
-                ("下载完后选择", "ask_after_download"),
+                ("Название по умолчанию", "book_name"),
+                ("Исходное название", "original_book_name"),
+                ("Короткое название", "book_short_name"),
+                ("Выбрать после загрузки", "ask_after_download"),
             ];
-            println!("\n当前: {}", current);
+            println!("\nСейчас: {}", current);
             for (idx, (label, _)) in OPTIONS.iter().enumerate() {
                 println!("  {}. {}", idx + 1, label);
             }
-            println!("  0. 取消");
-            let choice = super::read_line("请选择: ")?;
+            println!("  0. Отмена");
+            let choice = super::read_line("Выберите: ")?;
             let choice = choice.trim();
             if choice == "0" || choice.is_empty() {
                 return Ok(None);
             }
             let Ok(idx) = choice.parse::<usize>() else {
-                println!("请输入数字编号");
+                println!("Введите числовой номер");
                 return Ok(None);
             };
             if idx == 0 || idx > OPTIONS.len() {
-                println!("编号超出范围");
+                println!("Номер вне диапазона");
                 return Ok(None);
             }
             Ok(Some(OPTIONS[idx - 1].0.to_string()))

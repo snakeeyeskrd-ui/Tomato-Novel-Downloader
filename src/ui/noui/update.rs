@@ -1,4 +1,4 @@
-//! 无 UI 的更新检查与提示。
+//! Проверка обновлений новелл и подсказки в режиме без UI.
 
 use std::io::{self, Write};
 use std::path::Path;
@@ -18,7 +18,7 @@ pub(super) fn update_menu(config: &Config) -> Result<Option<String>> {
     let save_dir = config.default_save_dir();
     if !save_dir.exists() {
         println!(
-            "没有可供更新的小说（保存目录不存在）：{}\n",
+            "Нет новелл для обновления (каталог сохранения не существует): {}\n",
             save_dir.display()
         );
         return Ok(None);
@@ -26,12 +26,12 @@ pub(super) fn update_menu(config: &Config) -> Result<Option<String>> {
 
     let (updates, no_updates) = scan_updates(config, &save_dir)?;
     if updates.is_empty() && no_updates.is_empty() {
-        println!("没有可供更新的小说\n");
+        println!("Нет новелл для обновления\n");
         return Ok(None);
     }
 
     loop {
-        println!("\n===== 可供更新的小说列表 =====");
+        println!("\n===== Список новелл для обновления =====");
         for (idx, u) in updates.iter().enumerate() {
             println!("{}. {}", idx + 1, u.label);
         }
@@ -39,19 +39,19 @@ pub(super) fn update_menu(config: &Config) -> Result<Option<String>> {
             None
         } else {
             let n = updates.len() + 1;
-            println!("{}. 无更新 ({})", n, no_updates.len());
+            println!("{}. Без обновлений ({})", n, no_updates.len());
             Some(n)
         };
-        println!("q. 退出\n");
+        println!("q. Выход\n");
 
-        let sel = super::read_line("请输入编号：")?;
+        let sel = super::read_line("Введите номер: ")?;
         let sel = sel.trim().to_ascii_lowercase();
         if sel == "q" {
-            println!("已取消更新\n");
+            println!("Обновление отменено\n");
             return Ok(None);
         }
         let Ok(n) = sel.parse::<usize>() else {
-            println!("错误：请输入数字编号或 q 退出。\n");
+            println!("Ошибка: введите числовой номер или q для выхода.\n");
             continue;
         };
 
@@ -61,7 +61,7 @@ pub(super) fn update_menu(config: &Config) -> Result<Option<String>> {
 
         if let Some(no_idx) = opt_no_update
             && n == no_idx
-            && let Some(book_id) = select_from_list(&no_updates, "无更新的书籍")?
+            && let Some(book_id) = select_from_list(&no_updates, "Книги без обновлений")?
         {
             return Ok(Some(book_id));
         }
@@ -72,7 +72,10 @@ pub(super) fn update_menu(config: &Config) -> Result<Option<String>> {
         }
 
         let max = opt_no_update.unwrap_or(updates.len());
-        println!("错误：请输入 1 到 {} 之间的数字，或 q 退出。\n", max);
+        println!(
+            "Ошибка: введите число от 1 до {} или q для выхода.\n",
+            max
+        );
     }
 }
 
@@ -82,39 +85,42 @@ fn select_from_list(list: &[UpdateEntry], title: &str) -> Result<Option<String>>
         for (idx, u) in list.iter().enumerate() {
             println!("{}. {}", idx + 1, u.label);
         }
-        println!("q. 取消并返回上级菜单\n");
+        println!("q. Отмена и возврат в предыдущее меню\n");
 
-        let sel = super::read_line("请输入编号：")?;
+        let sel = super::read_line("Введите номер: ")?;
         let sel = sel.trim().to_ascii_lowercase();
         if sel == "q" {
             return Ok(None);
         }
         let Ok(n) = sel.parse::<usize>() else {
-            println!("错误：请输入数字编号或 q 返回。\n");
+            println!("Ошибка: введите числовой номер или q для возврата.\n");
             continue;
         };
         if n >= 1 && n <= list.len() {
             return Ok(Some(list[n - 1].book_id.clone()));
         }
-        println!("错误：请输入 1 到 {} 之间的数字，或 q 返回。\n", list.len());
+        println!(
+            "Ошибка: введите число от 1 до {} или q для возврата.\n",
+            list.len()
+        );
     }
 }
 
 fn scan_updates(_config: &Config, save_dir: &Path) -> Result<(Vec<UpdateEntry>, Vec<UpdateEntry>)> {
-    println!("开始扫描更新（会边检查边显示结果）…");
+    println!("Начинаю сканирование обновлений (результаты показываются по ходу)…");
     let scan = novel_updates::scan_novel_updates_with_progress(save_dir, |progress| {
         let row = progress.row;
         print!(
-            "\r已检查 {}/{}，当前：《{}》({})      ",
+            "\rПроверено {}/{}, сейчас: «{}» ({})      ",
             progress.scanned, progress.total, row.book_name, row.book_id
         );
         let _ = io::stdout().flush();
         if row.has_update && !row.is_ignored {
-            println!("\n发现更新：{}", update_label(&row));
+            println!("\nНайдено обновление: {}", update_label(&row));
         }
     })?;
     println!(
-        "\r扫描完成：有更新 {} 本，无更新 {} 本      ",
+        "\rСканирование завершено: с обновлениями {} шт., без обновлений {} шт.      ",
         scan.updates.len(),
         scan.no_updates.len()
     );
@@ -131,25 +137,29 @@ fn scan_updates(_config: &Config, save_dir: &Path) -> Result<(Vec<UpdateEntry>, 
 }
 
 fn update_label(it: &novel_updates::NovelUpdateRow) -> String {
-    let ignore_marker = if it.is_ignored { "[已忽略] " } else { "" };
+    let ignore_marker = if it.is_ignored {
+        "[игнорируется] "
+    } else {
+        ""
+    };
     if it.new_count > 0 && it.local_failed > 0 {
         format!(
-            "{}《{}》({}) — 新章节：{} | 失败章节：{}",
+            "{}«{}» ({}) — новых глав: {} | неудачных глав: {}",
             ignore_marker, it.book_name, it.book_id, it.new_count, it.local_failed
         )
     } else if it.new_count > 0 {
         format!(
-            "{}《{}》({}) — 新章节：{}",
+            "{}«{}» ({}) — новых глав: {}",
             ignore_marker, it.book_name, it.book_id, it.new_count
         )
     } else if it.local_failed > 0 {
         format!(
-            "{}《{}》({}) — 失败章节：{}",
+            "{}«{}» ({}) — неудачных глав: {}",
             ignore_marker, it.book_name, it.book_id, it.local_failed
         )
     } else {
         format!(
-            "{}《{}》({}) — 新章节：0",
+            "{}«{}» ({}) — новых глав: 0",
             ignore_marker, it.book_name, it.book_id
         )
     }

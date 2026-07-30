@@ -1,6 +1,6 @@
-//! TUI 配置模型与编辑逻辑。
+//! TUI config model and edit logic.
 //!
-//! 将 `Config` 映射为可展示/可编辑的字段列表，并负责写回 `config.yml`。
+//! Maps `Config` to displayable/editable fields and writes back `config.yml`.
 
 use std::path::Path;
 
@@ -8,8 +8,7 @@ use anyhow::{Result, anyhow};
 
 use crate::base_system::config::{ConfigSpec, write_with_comments};
 use crate::base_system::context::{
-    Config, OUTPUT_FORMAT_BULK_TXT, OUTPUT_FORMAT_PDF, output_format_label,
-    output_format_value_from_label,
+    Config, OUTPUT_FORMAT_BULK_TXT, OUTPUT_FORMAT_PDF, output_format_value_from_label,
 };
 
 use super::App;
@@ -80,93 +79,93 @@ pub(in crate::ui) struct VoicePreset {
 pub(in crate::ui) const AUDIOBOOK_VOICE_PRESETS: &[VoicePreset] = &[
     VoicePreset {
         name: "zh-CN-XiaoxiaoNeural",
-        label: "zh-CN-XiaoxiaoNeural (女)",
+        label: "zh-CN-XiaoxiaoNeural (жен.)",
     },
     VoicePreset {
         name: "zh-CN-XiaoyiNeural",
-        label: "zh-CN-XiaoyiNeural (女)",
+        label: "zh-CN-XiaoyiNeural (жен.)",
     },
     VoicePreset {
         name: "zh-CN-YunjianNeural",
-        label: "zh-CN-YunjianNeural (男)",
+        label: "zh-CN-YunjianNeural (муж.)",
     },
     VoicePreset {
         name: "zh-CN-YunxiNeural",
-        label: "zh-CN-YunxiNeural (男)",
+        label: "zh-CN-YunxiNeural (муж.)",
     },
     VoicePreset {
         name: "zh-CN-YunxiaNeural",
-        label: "zh-CN-YunxiaNeural (男)",
+        label: "zh-CN-YunxiaNeural (муж.)",
     },
     VoicePreset {
         name: "zh-CN-YunyangNeural",
-        label: "zh-CN-YunyangNeural (男)",
+        label: "zh-CN-YunyangNeural (муж.)",
     },
     VoicePreset {
         name: "zh-CN-liaoning-XiaobeiNeural",
-        label: "zh-CN-liaoning-XiaobeiNeural (女)",
+        label: "zh-CN-liaoning-XiaobeiNeural (жен.)",
     },
     VoicePreset {
         name: "zh-CN-shaanxi-XiaoniNeural",
-        label: "zh-CN-shaanxi-XiaoniNeural (女)",
+        label: "zh-CN-shaanxi-XiaoniNeural (жен.)",
     },
     VoicePreset {
         name: "zh-HK-HiuGaaiNeural",
-        label: "zh-HK-HiuGaaiNeural (女)",
+        label: "zh-HK-HiuGaaiNeural (жен.)",
     },
     VoicePreset {
         name: "zh-HK-HiuMaanNeural",
-        label: "zh-HK-HiuMaanNeural (女)",
+        label: "zh-HK-HiuMaanNeural (жен.)",
     },
     VoicePreset {
         name: "zh-HK-WanLungNeural",
-        label: "zh-HK-WanLungNeural (男)",
+        label: "zh-HK-WanLungNeural (муж.)",
     },
     VoicePreset {
         name: "zh-TW-HsiaoChenNeural",
-        label: "zh-TW-HsiaoChenNeural (女)",
+        label: "zh-TW-HsiaoChenNeural (жен.)",
     },
 ];
 
 pub(in crate::ui) const BOOK_NAME_FIELD_PRESETS: &[VoicePreset] = &[
     VoicePreset {
         name: "book_name",
-        label: "默认书名",
+        label: "Название по умолчанию",
     },
     VoicePreset {
         name: "original_book_name",
-        label: "原始书名",
+        label: "Оригинальное название",
     },
     VoicePreset {
         name: "book_short_name",
-        label: "短书名",
+        label: "Короткое название",
     },
     VoicePreset {
         name: "ask_after_download",
-        label: "下载完后选择",
+        label: "Спросить после загрузки",
     },
 ];
 
 pub(in crate::ui) const NOVEL_FORMAT_PRESETS: &[VoicePreset] = &[
     VoicePreset {
         name: "txt",
-        label: "txt 格式",
+        label: "Формат txt",
     },
     VoicePreset {
         name: "epub",
-        label: "epub 格式",
+        label: "Формат epub",
     },
     VoicePreset {
         name: OUTPUT_FORMAT_PDF,
-        label: "pdf 格式",
+        label: "Формат pdf",
     },
     VoicePreset {
         name: OUTPUT_FORMAT_BULK_TXT,
-        label: "散装文件",
+        label: "Отдельные файлы",
     },
     VoicePreset {
         name: "ask_after_download",
-        label: "下载完后选择",
+        label: "Спросить после загрузки",
     },
 ];
 
@@ -191,67 +190,67 @@ pub(in crate::ui) fn cfg_combo_presets(field: ConfigField) -> Option<&'static [V
 pub(in crate::ui) fn build_config_categories() -> Vec<ConfigCategory> {
     vec![
         ConfigCategory {
-            title: "基础与格式",
+            title: "Основное и формат",
             entries: vec![
                 ConfigEntry {
-                    title: "保存路径",
+                    title: "Путь сохранения",
                     field: ConfigField::SavePath,
                 },
                 ConfigEntry {
-                    title: "小说格式",
+                    title: "Формат книги",
                     field: ConfigField::NovelFormat,
                 },
                 ConfigEntry {
-                    title: "首行缩进(em)",
+                    title: "Отступ первой строки (em)",
                     field: ConfigField::FirstLineIndentEm,
                 },
                 ConfigEntry {
-                    title: "自动清理缓存",
+                    title: "Автоочистка кэша",
                     field: ConfigField::AutoClearDump,
                 },
                 ConfigEntry {
-                    title: "下载完成后自动打开",
+                    title: "Открывать после загрузки",
                     field: ConfigField::AutoOpenDownloadedFiles,
                 },
                 ConfigEntry {
-                    title: "允许覆盖已存在文件",
+                    title: "Разрешить перезапись файлов",
                     field: ConfigField::AllowOverwriteFiles,
                 },
                 ConfigEntry {
-                    title: "优先书名字段",
+                    title: "Предпочтительное поле названия",
                     field: ConfigField::PreferredBookNameField,
                 },
                 ConfigEntry {
-                    title: "旧版 CLI UI",
+                    title: "Старый CLI UI",
                     field: ConfigField::OldCli,
                 },
             ],
         },
         ConfigCategory {
-            title: "网络与调度",
+            title: "Сеть и планирование",
             entries: vec![
                 ConfigEntry {
-                    title: "最大线程数",
+                    title: "Макс. потоков",
                     field: ConfigField::MaxWorkers,
                 },
                 ConfigEntry {
-                    title: "请求超时(s)",
+                    title: "Таймаут запроса (с)",
                     field: ConfigField::RequestTimeout,
                 },
                 ConfigEntry {
-                    title: "最大重试次数",
+                    title: "Макс. повторов",
                     field: ConfigField::MaxRetries,
                 },
                 ConfigEntry {
-                    title: "最小连接超时(s)",
+                    title: "Мин. таймаут соединения (с)",
                     field: ConfigField::MinConnectTimeout,
                 },
                 ConfigEntry {
-                    title: "最小等待时间(ms)",
+                    title: "Мин. ожидание (мс)",
                     field: ConfigField::MinWait,
                 },
                 ConfigEntry {
-                    title: "最大等待时间(ms)",
+                    title: "Макс. ожидание (мс)",
                     field: ConfigField::MaxWait,
                 },
             ],
@@ -260,126 +259,126 @@ pub(in crate::ui) fn build_config_categories() -> Vec<ConfigCategory> {
             title: "API",
             entries: vec![
                 ConfigEntry {
-                    title: "使用官方API",
+                    title: "Использовать официальный API",
                     field: ConfigField::UseOfficialApi,
                 },
                 ConfigEntry {
-                    title: "API 列表(逗号分隔)",
+                    title: "Список API (через запятую)",
                     field: ConfigField::ApiEndpoints,
                 },
             ],
         },
         ConfigCategory {
-            title: "段评",
+            title: "Комментарии к абзацам",
             entries: vec![
                 ConfigEntry {
-                    title: "启用段评",
+                    title: "Включить комментарии к абзацам",
                     field: ConfigField::EnableSegmentComments,
                 },
                 ConfigEntry {
-                    title: "每段评论数上限",
+                    title: "Лимит комментариев на абзац",
                     field: ConfigField::SegmentCommentsTopN,
                 },
                 ConfigEntry {
-                    title: "段评并发线程数",
+                    title: "Потоки для комментариев",
                     field: ConfigField::SegmentCommentsWorkers,
                 },
             ],
         },
         ConfigCategory {
-            title: "媒体下载",
+            title: "Медиа",
             entries: vec![
                 ConfigEntry {
-                    title: "下载评论图片",
+                    title: "Скачивать картинки комментариев",
                     field: ConfigField::DownloadCommentImages,
                 },
                 ConfigEntry {
-                    title: "下载评论头像",
+                    title: "Скачивать аватары комментариев",
                     field: ConfigField::DownloadCommentAvatars,
                 },
                 ConfigEntry {
-                    title: "媒体下载线程数",
+                    title: "Потоки загрузки медиа",
                     field: ConfigField::MediaDownloadWorkers,
                 },
                 ConfigEntry {
-                    title: "阻止的图片域名",
+                    title: "Блокируемые домены картинок",
                     field: ConfigField::BlockedMediaDomains,
                 },
                 ConfigEntry {
-                    title: "强制转成 JPEG",
+                    title: "Принудительно в JPEG",
                     field: ConfigField::ForceConvertImagesToJpeg,
                 },
                 ConfigEntry {
-                    title: "失败重试再转 JPEG",
+                    title: "При ошибке снова в JPEG",
                     field: ConfigField::JpegRetryConvert,
                 },
                 ConfigEntry {
-                    title: "JPEG 质量(0-100)",
+                    title: "Качество JPEG (0-100)",
                     field: ConfigField::JpegQuality,
                 },
                 ConfigEntry {
-                    title: "HEIC 转 JPEG",
+                    title: "HEIC в JPEG",
                     field: ConfigField::ConvertHeicToJpeg,
                 },
                 ConfigEntry {
-                    title: "保留 HEIC 原图",
+                    title: "Сохранять оригинал HEIC",
                     field: ConfigField::KeepHeicOriginal,
                 },
                 ConfigEntry {
-                    title: "单章节媒体上限",
+                    title: "Лимит медиа на главу",
                     field: ConfigField::MediaLimitPerChapter,
                 },
                 ConfigEntry {
-                    title: "媒体最大尺寸(px)",
+                    title: "Макс. размер медиа (px)",
                     field: ConfigField::MediaMaxDimensionPx,
                 },
             ],
         },
         ConfigCategory {
-            title: "有声书",
+            title: "Аудиокнига",
             entries: vec![
                 ConfigEntry {
-                    title: "启用有声书",
+                    title: "Включить аудиокнигу",
                     field: ConfigField::EnableAudiobook,
                 },
                 ConfigEntry {
-                    title: "发音人",
+                    title: "Голос",
                     field: ConfigField::AudiobookVoice,
                 },
                 ConfigEntry {
-                    title: "TTS 服务类型(edge/third_party)",
+                    title: "Тип TTS (edge/third_party)",
                     field: ConfigField::AudiobookTtsProvider,
                 },
                 ConfigEntry {
-                    title: "第三方 TTS API 地址",
+                    title: "URL стороннего TTS API",
                     field: ConfigField::AudiobookTtsApiUrl,
                 },
                 ConfigEntry {
-                    title: "第三方 TTS Token",
+                    title: "Токен стороннего TTS",
                     field: ConfigField::AudiobookTtsApiToken,
                 },
                 ConfigEntry {
-                    title: "第三方 TTS 模型",
+                    title: "Модель стороннего TTS",
                     field: ConfigField::AudiobookTtsModel,
                 },
                 ConfigEntry {
-                    title: "语速调整",
+                    title: "Скорость речи",
                     field: ConfigField::AudiobookRate,
                 },
                 ConfigEntry {
-                    title: "音量调整",
+                    title: "Громкость",
                     field: ConfigField::AudiobookVolume,
                 },
                 ConfigEntry {
-                    title: "音调调整",
+                    title: "Высота тона",
                     field: ConfigField::AudiobookPitch,
                 },
                 ConfigEntry {
-                    title: "输出格式(mp3/wav)",
+                    title: "Формат вывода (mp3/wav)",
                     field: ConfigField::AudiobookFormat,
                 },
                 ConfigEntry {
-                    title: "并发生成章节数",
+                    title: "Параллельных глав генерации",
                     field: ConfigField::AudiobookConcurrency,
                 },
             ],
@@ -391,7 +390,7 @@ pub(in crate::ui) fn current_cfg_value(app: &App, field: ConfigField) -> String 
     match field {
         ConfigField::SavePath => app.config.save_path.clone(),
         ConfigField::NovelFormat => {
-            output_format_label(app.config.current_output_format_choice()).to_string()
+            output_format_label_ru(app.config.current_output_format_choice()).to_string()
         }
         ConfigField::FirstLineIndentEm => format!("{:.2}", app.config.first_line_indent_em),
         ConfigField::AutoClearDump => app.config.auto_clear_dump.to_string(),
@@ -512,7 +511,7 @@ pub(in crate::ui) fn start_cfg_edit(app: &mut App) {
             app.cfg_combo_state.select(idx);
         }
     }
-    app.status = format!("正在编辑 [{}]: {}", category.title, entry.title);
+    app.status = format!("Правка [{}]: {}", category.title, entry.title);
 }
 
 pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: usize) -> Result<()> {
@@ -545,7 +544,7 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
                 {
                     lower
                 } else {
-                    app.status = "请选择：txt 格式、epub 格式、pdf 格式、散装文件 或 下载完后选择"
+                    app.status = "Выберите: Формат txt, Формат epub, Формат pdf, Отдельные файлы или Спросить после загрузки"
                         .to_string();
                     return Ok(());
                 }
@@ -555,35 +554,35 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
                 .map_err(anyhow::Error::msg)?;
             if app.config.novel_format == "txt" && app.config.enable_segment_comments {
                 app.config.enable_segment_comments = false;
-                note = Some("已关闭段评以兼容 txt".to_string());
+                note = Some("Комментарии к абзацам отключены для совместимости с txt".to_string());
             }
         }
         ConfigField::FirstLineIndentEm => {
-            let val: f32 = raw.parse().map_err(|_| anyhow!("请输入数字"))?;
+            let val: f32 = raw.parse().map_err(|_| anyhow!("Введите число"))?;
             if val.is_sign_negative() {
-                app.status = "缩进不能为负".to_string();
+                app.status = "Отступ не может быть отрицательным".to_string();
                 return Ok(());
             }
             app.config.first_line_indent_em = val;
         }
         ConfigField::AutoClearDump => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.auto_clear_dump = val;
         }
         ConfigField::AutoOpenDownloadedFiles => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.auto_open_downloaded_files = val;
         }
         ConfigField::AllowOverwriteFiles => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.allow_overwrite_files = val;
         }
         ConfigField::PreferredBookNameField => {
-            // 尝试从中文转换，如果失败则尝试直接使用英文
+            // Try converting from display label; fall back to English field names
             let field_name = if let Some(english) = chinese_to_book_name_field(raw) {
                 english
             } else {
-                // 如果不是中文，检查是否是有效的英文字段名
+                // If not a known label, check for a valid English field name
                 let lower = raw.to_ascii_lowercase();
                 if lower == "book_name"
                     || lower == "original_book_name"
@@ -592,26 +591,26 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
                 {
                     lower
                 } else {
-                    app.status = "请选择：默认书名、原始书名、短书名 或 下载完后选择".to_string();
+                    app.status = "Выберите: Название по умолчанию, Оригинальное название, Короткое название или Спросить после загрузки".to_string();
                     return Ok(());
                 }
             };
             app.config.preferred_book_name_field = field_name;
         }
         ConfigField::OldCli => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.old_cli = val;
         }
         ConfigField::EnableSegmentComments => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             if val && !app.config.novel_format.eq_ignore_ascii_case("epub") {
-                app.status = "段评仅支持 epub，请先将格式改为 epub".to_string();
+                app.status = "Комментарии к абзацам только для epub — сначала смените формат на epub".to_string();
                 return Ok(());
             }
             app.config.enable_segment_comments = val;
         }
         ConfigField::UseOfficialApi => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.use_official_api = val;
         }
         ConfigField::ApiEndpoints => {
@@ -619,51 +618,51 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
             app.config.api_endpoints = list;
         }
         ConfigField::MaxWorkers => {
-            let val: usize = raw.parse().map_err(|_| anyhow!("请输入正整数"))?;
+            let val: usize = raw.parse().map_err(|_| anyhow!("Введите целое положительное число"))?;
             if val == 0 {
-                app.status = "最大线程数需大于 0".to_string();
+                app.status = "Макс. потоков должно быть больше 0".to_string();
                 return Ok(());
             }
             app.config.max_workers = val;
         }
         ConfigField::RequestTimeout => {
-            let val: u64 = raw.parse().map_err(|_| anyhow!("请输入秒数"))?;
+            let val: u64 = raw.parse().map_err(|_| anyhow!("Введите число секунд"))?;
             if val == 0 {
-                app.status = "超时时间需大于 0".to_string();
+                app.status = "Таймаут должен быть больше 0".to_string();
                 return Ok(());
             }
             app.config.request_timeout = val;
         }
         ConfigField::MaxRetries => {
-            let val: u32 = raw.parse().map_err(|_| anyhow!("请输入整数"))?;
+            let val: u32 = raw.parse().map_err(|_| anyhow!("Введите целое число"))?;
             app.config.max_retries = val;
         }
         ConfigField::MinConnectTimeout => {
-            let val: f64 = raw.parse().map_err(|_| anyhow!("请输入数字"))?;
+            let val: f64 = raw.parse().map_err(|_| anyhow!("Введите число"))?;
             if val <= 0.0 {
-                app.status = "连接超时需大于 0".to_string();
+                app.status = "Таймаут соединения должен быть больше 0".to_string();
                 return Ok(());
             }
             app.config.min_connect_timeout = val;
         }
         ConfigField::MinWait => {
-            let val: u64 = raw.parse().map_err(|_| anyhow!("请输入整数毫秒"))?;
+            let val: u64 = raw.parse().map_err(|_| anyhow!("Введите целое число миллисекунд"))?;
             if val > app.config.max_wait_time {
-                app.status = "最小等待时间不能超过最大等待时间".to_string();
+                app.status = "Мин. ожидание не может превышать макс. ожидание".to_string();
                 return Ok(());
             }
             app.config.min_wait_time = val;
         }
         ConfigField::MaxWait => {
-            let val: u64 = raw.parse().map_err(|_| anyhow!("请输入整数毫秒"))?;
+            let val: u64 = raw.parse().map_err(|_| anyhow!("Введите целое число миллисекунд"))?;
             if val < app.config.min_wait_time {
-                app.status = "最大等待时间需要不小于最小等待时间".to_string();
+                app.status = "Макс. ожидание не может быть меньше мин. ожидания".to_string();
                 return Ok(());
             }
             app.config.max_wait_time = val;
         }
         ConfigField::EnableAudiobook => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.enable_audiobook = val;
         }
         ConfigField::AudiobookVoice => {
@@ -681,15 +680,15 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
         ConfigField::AudiobookFormat => {
             let lower = raw.to_ascii_lowercase();
             if lower != "mp3" && lower != "wav" {
-                app.status = "格式仅支持 mp3 或 wav".to_string();
+                app.status = "Формат только mp3 или wav".to_string();
                 return Ok(());
             }
             app.config.audiobook_format = lower;
         }
         ConfigField::AudiobookConcurrency => {
-            let val: usize = raw.parse().map_err(|_| anyhow!("请输入正整数"))?;
+            let val: usize = raw.parse().map_err(|_| anyhow!("Введите целое положительное число"))?;
             if val == 0 {
-                app.status = "并发章节数需大于 0".to_string();
+                app.status = "Число параллельных глав должно быть больше 0".to_string();
                 return Ok(());
             }
             app.config.audiobook_concurrency = val;
@@ -707,33 +706,33 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
             app.config.audiobook_tts_model = raw.to_string();
         }
         ConfigField::SegmentCommentsTopN => {
-            let val: usize = raw.parse().map_err(|_| anyhow!("请输入整数"))?;
+            let val: usize = raw.parse().map_err(|_| anyhow!("Введите целое число"))?;
             if val == 0 {
-                app.status = "评论数上限需大于 0".to_string();
+                app.status = "Лимит комментариев должен быть больше 0".to_string();
                 return Ok(());
             }
             app.config.segment_comments_top_n = val;
         }
         ConfigField::SegmentCommentsWorkers => {
-            let val: usize = raw.parse().map_err(|_| anyhow!("请输入正整数"))?;
+            let val: usize = raw.parse().map_err(|_| anyhow!("Введите целое положительное число"))?;
             if val == 0 {
-                app.status = "段评线程数需大于 0".to_string();
+                app.status = "Число потоков комментариев должно быть больше 0".to_string();
                 return Ok(());
             }
             app.config.segment_comments_workers = val;
         }
         ConfigField::DownloadCommentImages => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.download_comment_images = val;
         }
         ConfigField::DownloadCommentAvatars => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.download_comment_avatars = val;
         }
         ConfigField::MediaDownloadWorkers => {
-            let val: usize = raw.parse().map_err(|_| anyhow!("请输入正整数"))?;
+            let val: usize = raw.parse().map_err(|_| anyhow!("Введите целое положительное число"))?;
             if val == 0 {
-                app.status = "媒体线程数需大于 0".to_string();
+                app.status = "Число потоков медиа должно быть больше 0".to_string();
                 return Ok(());
             }
             app.config.media_download_workers = val;
@@ -742,37 +741,37 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
             app.config.blocked_media_domains = parse_string_list(raw);
         }
         ConfigField::ForceConvertImagesToJpeg => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.force_convert_images_to_jpeg = val;
         }
         ConfigField::JpegRetryConvert => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.jpeg_retry_convert = val;
         }
         ConfigField::JpegQuality => {
             let val: u8 = raw
                 .parse()
-                .map_err(|_| anyhow!("请输入 0-100 之间的整数"))?;
+                .map_err(|_| anyhow!("Введите целое число от 0 до 100"))?;
             if val > 100 {
-                app.status = "JPEG 质量需在 0-100 之间".to_string();
+                app.status = "Качество JPEG должно быть от 0 до 100".to_string();
                 return Ok(());
             }
             app.config.jpeg_quality = val;
         }
         ConfigField::ConvertHeicToJpeg => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.convert_heic_to_jpeg = val;
         }
         ConfigField::KeepHeicOriginal => {
-            let val = parse_bool(raw).ok_or_else(|| anyhow!("请输入 true/false"))?;
+            let val = parse_bool(raw).ok_or_else(|| anyhow!("Введите true/false"))?;
             app.config.keep_heic_original = val;
         }
         ConfigField::MediaLimitPerChapter => {
-            let val: usize = raw.parse().map_err(|_| anyhow!("请输入整数"))?;
+            let val: usize = raw.parse().map_err(|_| anyhow!("Введите целое число"))?;
             app.config.media_limit_per_chapter = val;
         }
         ConfigField::MediaMaxDimensionPx => {
-            let val: u32 = raw.parse().map_err(|_| anyhow!("请输入整数"))?;
+            let val: u32 = raw.parse().map_err(|_| anyhow!("Введите целое число"))?;
             app.config.media_max_dimension_px = val;
         }
     }
@@ -780,8 +779,8 @@ pub(in crate::ui) fn apply_cfg_edit(app: &mut App, cat_idx: usize, entry_idx: us
     let path = Path::new(Config::FILE_NAME);
     write_with_comments(&app.config, path).map_err(|e| anyhow!(e.to_string()))?;
     match note {
-        Some(extra) => app.status = format!("已保存: {}（{}）", entry_title, extra),
-        None => app.status = format!("已保存: {}", entry_title),
+        Some(extra) => app.status = format!("Сохранено: {} ({})", entry_title, extra),
+        None => app.status = format!("Сохранено: {}", entry_title),
     }
     Ok(())
 }
@@ -803,29 +802,48 @@ fn parse_string_list(input: &str) -> Vec<String> {
         .collect()
 }
 
-/// 将书名字段的英文名转换为中文显示名
-fn book_name_field_to_chinese(field: &str) -> &'static str {
-    match field {
-        "book_name" => "默认书名",
-        "original_book_name" => "原始书名",
-        "book_short_name" => "短书名",
-        "ask_after_download" => "下载完后选择",
-        _ => "默认书名",
+
+fn output_format_label_ru(choice: &str) -> &'static str {
+    match choice.trim().to_ascii_lowercase().as_str() {
+        "txt" => "Формат txt",
+        "epub" => "Формат epub",
+        "pdf" => "Формат pdf",
+        "bulk_txt" => "Отдельные файлы",
+        "ask_after_download" => "Спросить после загрузки",
+        _ => "Формат txt",
     }
 }
 
-/// 将中文显示名转换为书名字段的英文名
+/// Map English book-name field to display label
+fn book_name_field_to_chinese(field: &str) -> &'static str {
+    match field {
+        "book_name" => "Название по умолчанию",
+        "original_book_name" => "Оригинальное название",
+        "book_short_name" => "Короткое название",
+        "ask_after_download" => "Спросить после загрузки",
+        _ => "Название по умолчанию",
+    }
+}
+
+/// Map display label to English book-name field
 fn chinese_to_book_name_field(chinese: &str) -> Option<String> {
     match chinese {
-        "默认书名" => Some("book_name".to_string()),
-        "原始书名" => Some("original_book_name".to_string()),
-        "短书名" => Some("book_short_name".to_string()),
-        "下载完后选择" => Some("ask_after_download".to_string()),
+        "Название по умолчанию" => Some("book_name".to_string()),
+        "Оригинальное название" => Some("original_book_name".to_string()),
+        "Короткое название" => Some("book_short_name".to_string()),
+        "Спросить после загрузки" => Some("ask_after_download".to_string()),
         _ => None,
     }
 }
 
-/// 将中文显示名转换为小说格式英文名
+/// Map display label to novel format value
 fn chinese_to_novel_format(chinese: &str) -> Option<String> {
-    output_format_value_from_label(chinese).map(ToString::to_string)
+    match chinese {
+        "Формат txt" => Some("txt".to_string()),
+        "Формат epub" => Some("epub".to_string()),
+        "Формат pdf" => Some("pdf".to_string()),
+        "Отдельные файлы" => Some(OUTPUT_FORMAT_BULK_TXT.to_string()),
+        "Спросить после загрузки" => Some("ask_after_download".to_string()),
+        _ => output_format_value_from_label(chinese).map(ToString::to_string),
+    }
 }

@@ -1,13 +1,14 @@
-//! Tomato Novel Downloader（番茄小说下载器）Rust 实现。
+//! Tomato Novel Downloader (загрузчик новелл Tomato) — реализация на Rust.
 //!
-//! 本 crate 负责：配置加载、交互界面（TUI/CLI）、下载调度、内容解析与导出（txt/epub/有声书等）。
+//! Этот crate отвечает за: загрузку конфигурации, интерфейс (TUI/CLI),
+//! планирование загрузок, разбор контента и экспорт (txt/epub/аудиокниги и т.д.).
 //!
-//! 代码结构（读代码入口）：
-//! - `base_system`：配置/日志/重试/路径等基础设施
-//! - `download`：下载流程编排（拉目录、拉内容、冷却/重试等）
-//! - `book_parser`：解析与导出（epub/txt/媒体/有声书）
-//! - `ui`：TUI 与无 UI（old cli）两套交互
-//! - `prewarm_state`：启动预热状态（与 UI 协作显示）
+//! Структура кода (точки входа для чтения):
+//! - `base_system`: инфраструктура (конфиг / логи / повторы / пути)
+//! - `download`: оркестрация загрузки (оглавление, контент, паузы / повторы)
+//! - `book_parser`: разбор и экспорт (epub/txt/медиа/аудиокниги)
+//! - `ui`: два режима взаимодействия — TUI и без UI (старый CLI)
+//! - `prewarm_state`: состояние предпрогрева при запуске (совместно с UI)
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
@@ -42,52 +43,68 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[command(name = "tomato-novel-downloader")]
 #[command(about = "Tomato Novel Downloader (Rust TUI)")]
 struct Cli {
-    /// 启用调试日志输出
+    /// Включить отладочный вывод логов
     #[arg(long, default_value_t = false)]
     debug: bool,
 
-    /// 启用服务器模式（Web UI）
+    /// Включить режим сервера (Web UI)
     #[arg(long, default_value_t = false)]
     server: bool,
 
-    /// Web UI 密码（启用锁模式，防止陌生人使用）
+    /// Пароль Web UI (режим блокировки, чтобы посторонние не могли пользоваться)
     #[arg(long)]
     password: Option<String>,
 
-    /// 为 Web UI 登录 Cookie 添加 Secure 标志（HTTPS/反代部署建议开启）
+    /// Добавить флаг Secure к cookie входа Web UI (рекомендуется при HTTPS / обратном прокси)
     #[arg(long, default_value_t = false)]
     cookie_secure: bool,
 
-    /// 显示版本信息后退出
+    /// Показать версию и выйти
     #[arg(long, default_value_t = false)]
     version: bool,
 
-    /// 检查并执行程序自更新（从 GitHub Releases 下载并替换当前可执行文件）
+    /// Проверить и выполнить самообновление (скачать с GitHub Releases и заменить текущий исполняемый файл)
     #[arg(long, default_value_t = false)]
     self_update: bool,
 
-    /// 自更新时自动确认（等价于提示输入 Y）
+    /// Автоподтверждение при самообновлении (эквивалент ввода Y)
     #[arg(long, default_value_t = false)]
     self_update_yes: bool,
 
-    /// 数据目录路径（用于存放 config.yml 和 logs 等文件，方便 Docker 挂载）
+    /// Путь к каталогу данных (для config.yml, logs и т.п.; удобно для монтирования в Docker)
     #[arg(long)]
     data_dir: Option<String>,
 
-    /// 已禁用：为防止滥用，CLI 模式不再支持新建下载（保留参数仅用于输出友好报错）
+    /// Отключено: во избежание злоупотреблений CLI больше не поддерживает новые загрузки (параметр сохранён только для дружелюбной ошибки)
     #[arg(long, hide = true)]
     download: Option<String>,
 
-    /// 更新指定 book_id 的已下载小说（非交互模式）
+    /// Обновить уже скачанную новеллу с указанным book_id (неинтерактивный режим)
     #[arg(long)]
     update: Option<String>,
 
-    /// 非交互模式下失败章节重试一次
+    /// В неинтерактивном режиме один раз повторить главы с ошибками
     #[arg(long, default_value_t = false)]
     retry_failed: bool,
 }
 
 fn main() -> Result<()> {
+    // Windows console often starts in a legacy code page; UTF-8 is needed for Chinese titles.
+    #[cfg(windows)]
+    {
+        use std::process::Command;
+        let _ = Command::new("cmd").args(["/C", "chcp 65001 >NUL"]).status();
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn SetConsoleOutputCP(w_code_page_id: u32) -> i32;
+            fn SetConsoleCP(w_code_page_id: u32) -> i32;
+        }
+        unsafe {
+            SetConsoleOutputCP(65001);
+            SetConsoleCP(65001);
+        }
+    }
+
     let cli = Cli::parse();
 
     if cli.version {
@@ -104,21 +121,23 @@ fn main() -> Result<()> {
     }
 
     if cli.download.is_some() && cli.update.is_some() {
-        return Err(anyhow!("--download 和 --update 不能同时使用"));
+        return Err(anyhow!("--download и --update нельзя использовать одновременно"));
     }
 
-    // 启动时强制热更新（仅当 SHA256 不同且 tag 相同）。
-    // 例外：cargo run/开发态运行时跳过。
+    // Принудительный hotfix при запуске (только если SHA256 отличается при том же tag).
+    // Исключение: пропускается при cargo run / в режиме разработки.
     let _ = base_system::self_update::check_hotfix_and_apply(VERSION);
 
     prewarm_state::mark_prewarm_start();
     thread::spawn(|| {
         #[cfg(feature = "official-api")]
         {
-            // 注意：这里只应“预热/确保可用”，不得在每次启动时强制更换 IID。
-            // `prewarm_iid()` 现在会优先复用本地文件缓存，仅在缓存缺失或过期时才注册新的 IID。
+            // Здесь только «предпрогрев / обеспечение доступности» — не менять IID
+            // принудительно при каждом запуске. `prewarm_iid()` сначала использует
+            // локальный файловый кэш и регистрирует новый IID только при отсутствии
+            // или истечении кэша.
             match prewarm_iid() {
-                Ok(_) => info!(target: "startup", "IID 预热完成"),
+                Ok(_) => info!(target: "startup", "Предпрогрев IID завершён"),
                 Err(err) => {
                     prewarm_state::mark_prewarm_failed(err.to_string());
                     if let Some(message) = prewarm_state::prewarm_error() {
@@ -131,7 +150,7 @@ fn main() -> Result<()> {
 
         #[cfg(not(feature = "official-api"))]
         {
-            info!(target: "startup", "no-official-api 构建：跳过 IID 预热");
+            info!(target: "startup", "Сборка no-official-api: предпрогрев IID пропущен");
         }
         prewarm_state::mark_prewarm_done();
     });
@@ -140,16 +159,16 @@ fn main() -> Result<()> {
 
     // Handle command-line download/update modes
     if cli.download.is_some() || cli.update.is_some() {
-        info!(target: "startup", "当前版本: v{}", VERSION);
+        info!(target: "startup", "Текущая версия: v{}", VERSION);
 
         if cli.download.is_some() {
             return Err(anyhow!(
-                "出于防滥用考虑，CLI 模式已禁用新建下载；请先使用 Web UI / TUI 下载书籍，后续仅可通过 --update 更新本地已有小说。"
+                "Во избежание злоупотреблений новые загрузки в CLI отключены; сначала скачайте книгу через Web UI / TUI, далее обновляйте локальные новеллы только через --update."
             ));
         }
 
         if let Some(book_id) = cli.update.as_deref() {
-            println!("更新指定书籍 book_id={}", book_id);
+            println!("Обновление указанной книги book_id={}", book_id);
             return ui::noui::update_existing_book_non_interactive(
                 book_id,
                 &config,
@@ -175,14 +194,14 @@ fn main() -> Result<()> {
 
     loop {
         if config.old_cli {
-            info!(target: "startup", "当前版本: v{}", VERSION);
+            info!(target: "startup", "Текущая версия: v{}", VERSION);
             return ui::noui::run(&mut config);
         }
 
         match ui::tui::run(config)? {
             ui::tui::TuiExit::Quit => return Ok(()),
             ui::tui::TuiExit::SwitchToOldCli => {
-                // 模拟“重启”：重新从磁盘加载配置，然后进入 noui
+                // Имитация «перезапуска»: снова загрузить конфиг с диска и войти в noui
                 config = load_config_from_data_dir(data_dir)?;
                 config.old_cli = true;
             }

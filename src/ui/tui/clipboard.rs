@@ -1,7 +1,7 @@
-//! 剪贴板工具（TUI 用）。
+//! Clipboard helpers (for TUI).
 //!
-//! - Desktop：通过 `clipboard-arboard` 使用 arboard。
-//! - Android：优先使用 Termux `termux-clipboard-get`。
+//! - Desktop: arboard via `clipboard-arboard`.
+//! - Android: prefer Termux `termux-clipboard-get`.
 
 use anyhow::Result;
 
@@ -62,7 +62,7 @@ pub(super) fn get_text() -> Result<Option<String>> {
     not(feature = "clipboard-arboard")
 ))]
 pub(super) fn get_text() -> Result<Option<String>> {
-    // 构建启用了 `clipboard`，但没有可用后端（例如未启用 `clipboard-arboard`）。
+    // Built with `clipboard`, but no usable backend (e.g. `clipboard-arboard` not enabled).
     Ok(None)
 }
 
