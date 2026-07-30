@@ -1,4 +1,4 @@
-//! TUI 更新检查与提示页面。
+//! TUI update check page.
 
 use super::*;
 use std::thread;
@@ -12,9 +12,9 @@ pub(super) fn handle_event_update(app: &mut App, event: Event) -> Result<()> {
         Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
             KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('b') => exit_update_view(app)?,
             KeyCode::Char('i') => {
-                // 切换当前选中书籍的忽略更新状态
+                // Toggle ignore-updates for the selected book
                 if let Some(entry) = current_update_entry(app) {
-                    // 加载BookManager来切换忽略状态
+                    // Load BookManager to toggle ignore state
                     let mut manager = match crate::book_parser::book_manager::BookManager::new(
                         app.config.clone(),
                         &entry.book_id,
@@ -22,24 +22,24 @@ pub(super) fn handle_event_update(app: &mut App, event: Event) -> Result<()> {
                     ) {
                         Ok(m) => m,
                         Err(e) => {
-                            app.status = format!("加载书籍状态失败: {}", e);
+                            app.status = format!("Не удалось загрузить состояние книги: {}", e);
                             return Ok(());
                         }
                     };
 
-                    // 加载现有状态
+                    // Load existing state
                     manager.load_existing_status(&entry.book_id, &entry.book_name);
 
-                    // 切换忽略状态并保存
+                    // Toggle ignore state and save
                     let new_state = manager.toggle_ignore_updates();
 
                     if new_state {
-                        app.status = format!("已将《{}》添加到忽略列表", entry.book_name);
+                        app.status = format!("«{}» добавлена в список игнорирования", entry.book_name);
                     } else {
-                        app.status = format!("已将《{}》从忽略列表移除", entry.book_name);
+                        app.status = format!("«{}» удалена из списка игнорирования", entry.book_name);
                     }
 
-                    // 重新扫描更新
+                    // Rescan for updates
                     show_update_menu(app)?;
                 }
             }
@@ -71,7 +71,7 @@ pub(super) fn handle_event_update(app: &mut App, event: Event) -> Result<()> {
             }
             KeyCode::Enter => {
                 if let Some(entry) = current_update_entry(app) {
-                    app.status = format!("更新: {}", entry.label);
+                    app.status = format!("Обновление: {}", entry.label);
                     let hint = BookMeta {
                         book_name: Some(entry.book_name.clone()),
                         ..BookMeta::default()
@@ -90,7 +90,7 @@ pub(super) fn handle_event_update(app: &mut App, event: Event) -> Result<()> {
 
 fn exit_update_view(app: &mut App) -> Result<()> {
     app.view = View::Home;
-    app.status = "返回主菜单".to_string();
+    app.status = "Вернуться в главное меню".to_string();
     Ok(())
 }
 
@@ -224,17 +224,17 @@ fn current_update_entry(app: &App) -> Option<UpdateEntry> {
 }
 
 pub(super) fn show_update_menu(app: &mut App) -> Result<()> {
-    app.status = "扫描本地小说…".to_string();
+    app.status = "Сканирование локальных книг…".to_string();
     app.update_entries.clear();
     app.update_no_updates.clear();
     app.update_state.select(None);
     app.show_no_update = false;
     app.view = View::Update;
-    super::start_spinner(app, "扫描本地小说…");
+    super::start_spinner(app, "Сканирование локальных книг…");
 
     let cfg = app.config.clone();
     let tx = app.worker_tx.clone();
-    info!(target: "ui", "启动更新扫描");
+    info!(target: "ui", "Starting update scan");
     thread::spawn(move || {
         let progress_tx = tx.clone();
         let result = scan_updates(&cfg, move |progress| {
@@ -273,25 +273,25 @@ where
 }
 
 fn update_entry_from_row(it: novel_updates::NovelUpdateRow) -> UpdateEntry {
-    let ignore_marker = if it.is_ignored { "[已忽略] " } else { "" };
+    let ignore_marker = if it.is_ignored { "[игнор] " } else { "" };
     let label = if it.new_count > 0 && it.local_failed > 0 {
         format!(
-            "{}《{}》({}) — 新章节: {} | 失败章节: {}",
+            "{}«{}» ({}) — новых глав: {} | ошибок глав: {}",
             ignore_marker, it.book_name, it.book_id, it.new_count, it.local_failed
         )
     } else if it.new_count > 0 {
         format!(
-            "{}《{}》({}) — 新章节: {}",
+            "{}«{}» ({}) — новых глав: {}",
             ignore_marker, it.book_name, it.book_id, it.new_count
         )
     } else if it.local_failed > 0 {
         format!(
-            "{}《{}》({}) — 失败章节: {}",
+            "{}«{}» ({}) — ошибок глав: {}",
             ignore_marker, it.book_name, it.book_id, it.local_failed
         )
     } else {
         format!(
-            "{}《{}》({}) — 新章节: 0",
+            "{}«{}» ({}) — новых глав: 0",
             ignore_marker, it.book_name, it.book_id
         )
     };
@@ -324,15 +324,15 @@ pub(super) fn draw_update(frame: &mut ratatui::Frame, app: &mut App) {
 
     let header_line = Line::from(vec![
         Span::styled(
-            "更新",
+            "Обновления",
             Style::default()
                 .fg(Color::Green)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("  |  上下选择，Enter 下载，i 忽略/取消忽略，n 切换无更新，b 或右下角返回"),
+        Span::raw("  |  ↑↓ выбор, Enter загрузка, i игнор вкл/выкл, n без обновлений, b или кнопка — назад"),
     ]);
     let header =
-        Paragraph::new(header_line).block(Block::default().borders(Borders::ALL).title("更新检测"));
+        Paragraph::new(header_line).block(Block::default().borders(Borders::ALL).title("Проверка обновлений"));
     frame.render_widget(header, layout[0]);
 
     let list = if app.show_no_update {
@@ -341,16 +341,16 @@ pub(super) fn draw_update(frame: &mut ratatui::Frame, app: &mut App) {
         &app.update_entries
     };
     let items: Vec<ListItem> = if list.is_empty() {
-        vec![ListItem::new("没有可展示的项目")]
+        vec![ListItem::new("Нет элементов для отображения")]
     } else {
         list.iter()
             .map(|u| ListItem::new(u.label.clone()))
             .collect()
     };
     let list_title = if app.show_no_update {
-        "无更新书籍"
+        "Книги без обновлений"
     } else {
-        "有更新书籍"
+        "Книги с обновлениями"
     };
     let list_block = Block::default().borders(Borders::ALL).title(list_title);
     frame.render_widget(list_block.clone(), layout[1]);
@@ -400,13 +400,13 @@ pub(super) fn draw_update(frame: &mut ratatui::Frame, app: &mut App) {
     let mut msg_lines = vec![Line::from(app.status.clone())];
     if !app.update_entries.is_empty() {
         msg_lines.push(Line::from(format!(
-            "有更新: {} 本",
+            "С обновлениями: {}",
             app.update_entries.len()
         )));
     }
     if !app.update_no_updates.is_empty() {
         msg_lines.push(Line::from(format!(
-            "无更新: {} 本 (按 n 查看)",
+            "Без обновлений: {} (n — показать)",
             app.update_no_updates.len()
         )));
     }
@@ -418,15 +418,15 @@ pub(super) fn draw_update(frame: &mut ratatui::Frame, app: &mut App) {
 
     let footer = Paragraph::new(msg_lines)
         .wrap(Wrap { trim: true })
-        .block(Block::default().borders(Borders::ALL).title("提示"));
+        .block(Block::default().borders(Borders::ALL).title("Подсказка"));
     frame.render_widget(footer, footer_layout[0]);
 
-    let exit_btn = Paragraph::new(Line::from("返回主菜单"))
+    let exit_btn = Paragraph::new(Line::from("Вернуться в главное меню"))
         .alignment(ratatui::layout::Alignment::Center)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("返回")
+                .title("Назад")
                 .style(Style::default().fg(Color::Yellow)),
         );
     frame.render_widget(exit_btn, footer_layout[1]);

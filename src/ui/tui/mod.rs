@@ -1,6 +1,6 @@
-//! TUI（ratatui + crossterm）主循环与页面路由。
+//! TUI (ratatui + crossterm) main loop and page routing.
 //!
-//! 负责终端初始化（raw mode / mouse capture）、事件循环、页面切换与全局状态管理。
+//! Terminal init (raw mode / mouse capture), event loop, view switching, global state.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -378,7 +378,7 @@ impl App {
         Self {
             input: String::new(),
             focus: Focus::Input,
-            status: "输入书名/ID/链接，Enter 确认，Tab 切换焦点，q 退出".to_string(),
+            status: "Введите название/ID/ссылку, Enter — подтвердить, Tab — фокус, q — выход".to_string(),
             messages: Vec::new(),
             logs: Vec::new(),
             results: Vec::new(),
@@ -558,7 +558,7 @@ fn run_loop(
 ) -> Result<TuiExit> {
     let mut app = App::new(config, worker_tx, worker_rx);
 
-    // 每次启动检查程序更新（异步，不阻塞 UI）。
+    // Check for app updates on every start (async, non-blocking).
     start_app_update_check(&mut app);
 
     loop {
@@ -806,7 +806,7 @@ fn render_format_modal(frame: &mut ratatui::Frame, app: &mut App) {
     frame.render_widget(Clear, modal);
     let block = Block::default()
         .borders(Borders::ALL)
-        .title("下载完成：选择输出格式")
+        .title("Загрузка завершена: выберите формат")
         .border_style(Style::default().fg(Color::Green));
     frame.render_widget(block, modal);
 
@@ -826,7 +826,7 @@ fn render_format_modal(frame: &mut ratatui::Frame, app: &mut App) {
         ])
         .split(inner);
 
-    let hint = Paragraph::new(vec![Line::from("↑↓ 选择 / Enter 确认")]).wrap(Wrap { trim: true });
+    let hint = Paragraph::new(vec![Line::from("↑↓ выбор / Enter — подтвердить")]).wrap(Wrap { trim: true });
     frame.render_widget(hint, parts[0]);
 
     let items: Vec<ListItem> = app
@@ -836,7 +836,7 @@ fn render_format_modal(frame: &mut ratatui::Frame, app: &mut App) {
         .collect();
 
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("可选格式"))
+        .block(Block::default().borders(Borders::ALL).title("Доступные форматы"))
         .highlight_style(
             Style::default()
                 .bg(Color::Blue)
@@ -874,7 +874,7 @@ fn search_books(query: &str) -> Result<Vec<SearchItem>> {
 
 #[cfg(not(feature = "official-api"))]
 fn search_books(_query: &str) -> Result<Vec<SearchItem>> {
-    anyhow::bail!("当前构建未启用 official-api feature，搜索功能不可用")
+    anyhow::bail!("В этой сборке не включён feature official-api — поиск недоступен")
 }
 
 #[cfg(feature = "official-api")]
@@ -1003,7 +1003,7 @@ fn upsert_result_detail_from_plan(app: &mut App, book_id: &str, meta: &BookMeta)
     }
 }
 
-// JSON 字段提取 helper 已抽取到 base_system::json_extract
+// JSON field helpers live in base_system::json_extract
 
 pub(super) fn parse_book_id(input: &str) -> Option<String> {
     crate::base_system::book_id::parse_book_id(input)
@@ -1014,12 +1014,12 @@ pub(super) fn parse_range_input(input: &str, total: usize) -> Result<Option<Chap
 }
 
 const MENU_ITEMS: &[(&str, MenuAction)] = &[
-    ("确定", MenuAction::Confirm),
-    ("配置", MenuAction::Config),
-    ("更新", MenuAction::Update),
-    ("历史", MenuAction::History),
-    ("关于", MenuAction::About),
-    ("退出", MenuAction::Quit),
+    ("ОК", MenuAction::Confirm),
+    ("Настройки", MenuAction::Config),
+    ("Обновления", MenuAction::Update),
+    ("История", MenuAction::History),
+    ("О программе", MenuAction::About),
+    ("Выход", MenuAction::Quit),
 ];
 
 const SPINNER_FRAMES: &[char] = &['|', '/', '-', '\\'];
@@ -1027,15 +1027,15 @@ const SPINNER_FRAMES: &[char] = &['|', '/', '-', '\\'];
 const LOG_HEIGHT: u16 = 7;
 
 #[cfg(feature = "docker")]
-const ABOUT_BUTTONS: &[&str] = &["打开Github仓库", "返回"];
+const ABOUT_BUTTONS: &[&str] = &["Открыть репозиторий Github", "Назад"];
 
 #[cfg(not(feature = "docker"))]
 const ABOUT_BUTTONS: &[&str] = &[
-    "打开Github仓库",
-    "检查程序更新",
-    "执行自更新",
-    "不再提醒该版本",
-    "返回",
+    "Открыть репозиторий Github",
+    "Проверить обновления",
+    "Выполнить автообновление",
+    "Больше не напоминать об этой версии",
+    "Назад",
 ];
 
 fn current_category(app: &App) -> Option<(usize, &ConfigCategory)> {
@@ -1079,7 +1079,7 @@ pub(super) fn select_next_category(app: &mut App) {
     app.cfg_cat_state.select(Some(next));
     ensure_entry_selection(app);
     if let Some((_, cat)) = current_category(app) {
-        app.status = format!("当前分类: {}", cat.title);
+        app.status = format!("Текущая категория: {}", cat.title);
     }
 }
 
@@ -1102,7 +1102,7 @@ pub(super) fn select_prev_category(app: &mut App) {
     app.cfg_cat_state.select(Some(prev));
     ensure_entry_selection(app);
     if let Some((_, cat)) = current_category(app) {
-        app.status = format!("当前分类: {}", cat.title);
+        app.status = format!("Текущая категория: {}", cat.title);
     }
 }
 
@@ -1188,7 +1188,7 @@ fn split_with_log(area: Rect) -> (Rect, Rect) {
 fn render_log_box(frame: &mut ratatui::Frame, area: Rect, app: &App) {
     let mut lines = Vec::new();
     if app.logs.is_empty() {
-        lines.push(Line::from("日志: 暂无"));
+        lines.push(Line::from("Журнал: пусто"));
     } else {
         // Fit to visible height (area minus top/bottom borders) so the view auto-sticks to latest entries.
         let visible = area
@@ -1207,7 +1207,7 @@ fn render_log_box(frame: &mut ratatui::Frame, area: Rect, app: &App) {
 
     let log = Paragraph::new(lines)
         .wrap(Wrap { trim: true })
-        .block(Block::default().borders(Borders::ALL).title("日志"));
+        .block(Block::default().borders(Borders::ALL).title("Журнал"));
     frame.render_widget(log, area);
 }
 
@@ -1236,10 +1236,10 @@ fn render_prewarm_overlay(frame: &mut ratatui::Frame, app: &App) {
     };
 
     let spinner = SPINNER_FRAMES[(app.prewarm_spinner_idx) % SPINNER_FRAMES.len()];
-    let text = format!(" IID 预热中… {}", spinner);
+    let text = format!(" Прогрев IID… {}", spinner);
     let lines = vec![
         Line::from(Span::styled(
-            " 初始化",
+            " Инициализация",
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
@@ -1250,7 +1250,7 @@ fn render_prewarm_overlay(frame: &mut ratatui::Frame, app: &App) {
     frame.render_widget(Clear, overlay);
     let block = Block::default()
         .borders(Borders::ALL)
-        .title("正在预热 IID")
+        .title("Прогрев IID")
         .title_alignment(Alignment::Right);
     frame.render_widget(block, overlay);
     frame.render_widget(
@@ -1287,18 +1287,18 @@ fn render_iid_error_overlay(frame: &mut ratatui::Frame, app: &App) {
 
     let lines = vec![
         Line::from(Span::styled(
-            "⚠ IID 注册失败：可能被网络/反广告规则拦截",
+            "⚠ Ошибка регистрации IID: возможно, блокировка сетью / антирекламой",
             Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from("番茄官方接口需要访问 log.snssdk.com 注册 IID。"),
-        Line::from("公司/校园网、DNS 过滤、代理规则或 AdGuard/uBlock 可能会拦截该域名。"),
-        Line::from("请放行 log.snssdk.com，或临时关闭相关拦截后重试。"),
+        Line::from("Официальный API Tomato требует доступ к log.snssdk.com для регистрации IID."),
+        Line::from("Корпоративная/кампусная сеть, DNS-фильтры, прокси или AdGuard/uBlock могут блокировать этот домен."),
+        Line::from("Разрешите log.snssdk.com или временно отключите блокировку и повторите."),
         Line::from(""),
         Line::from(Span::styled(err, Style::default().fg(Color::Yellow))),
         Line::from(""),
         Line::from(Span::styled(
-            "按 Enter / Esc / q 关闭提示",
+            "Enter / Esc / q — закрыть подсказку",
             Style::default().fg(Color::Cyan),
         )),
     ];
@@ -1306,7 +1306,7 @@ fn render_iid_error_overlay(frame: &mut ratatui::Frame, app: &App) {
     frame.render_widget(Clear, overlay);
     let block = Block::default()
         .borders(Borders::ALL)
-        .title("IID 网络提示")
+        .title("Подсказка по сети IID")
         .title_alignment(Alignment::Center);
     frame.render_widget(block, overlay);
     frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: true }), inner);
@@ -1326,7 +1326,7 @@ fn render_book_name_modal(frame: &mut ratatui::Frame, app: &mut App) {
     frame.render_widget(Clear, modal);
     let block = Block::default()
         .borders(Borders::ALL)
-        .title("下载完成：选择书名")
+        .title("Загрузка завершена: выберите название")
         .border_style(Style::default().fg(Color::Green));
     frame.render_widget(block, modal);
 
@@ -1346,7 +1346,7 @@ fn render_book_name_modal(frame: &mut ratatui::Frame, app: &mut App) {
         ])
         .split(inner);
 
-    let hint = Paragraph::new(vec![Line::from("↑↓ 选择 / Enter 确认")]).wrap(Wrap { trim: true });
+    let hint = Paragraph::new(vec![Line::from("↑↓ выбор / Enter — подтвердить")]).wrap(Wrap { trim: true });
     frame.render_widget(hint, parts[0]);
 
     let items: Vec<ListItem> = app
@@ -1356,7 +1356,7 @@ fn render_book_name_modal(frame: &mut ratatui::Frame, app: &mut App) {
         .collect();
 
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("候选书名"))
+        .block(Block::default().borders(Borders::ALL).title("Варианты названия"))
         .highlight_style(
             Style::default()
                 .bg(Color::Blue)
@@ -1366,7 +1366,7 @@ fn render_book_name_modal(frame: &mut ratatui::Frame, app: &mut App) {
     frame.render_stateful_widget(list, parts[1], &mut app.book_name_modal_state);
     app.last_book_name_modal_list = Some(parts[1]);
 
-    let footer = Paragraph::new(Line::from("选择后将用于最终文件名（下载临时目录不变）"))
+    let footer = Paragraph::new(Line::from("Выбор пойдёт в итоговое имя файла (временный каталог загрузки не меняется)"))
         .wrap(Wrap { trim: true });
     frame.render_widget(footer, parts[2]);
 }
@@ -1446,8 +1446,8 @@ fn sync_prewarm_state(app: &mut App) {
         app.iid_prewarm_error_seen = Some(err.clone());
         app.iid_prewarm_error = Some(err.clone());
         app.status =
-            "IID 注册失败：请检查 log.snssdk.com 是否被公司/校园网或 AdGuard 等拦截".to_string();
-        app.push_message("IID 注册失败：请放行 log.snssdk.com 或关闭反广告/代理/DNS 拦截后重试");
+            "Ошибка регистрации IID: проверьте, не блокируется ли log.snssdk.com сетью или AdGuard".to_string();
+        app.push_message("Ошибка регистрации IID: разрешите log.snssdk.com или отключите антирекламу/прокси/DNS и повторите");
         app.push_log(err);
     }
 }
@@ -1466,8 +1466,8 @@ pub(super) fn maybe_show_iid_failure(app: &mut App, err: impl AsRef<str>) {
     app.iid_prewarm_error = Some(message.clone());
     app.iid_prewarm_error_seen = Some(message.clone());
     app.status =
-        "IID 注册失败：请检查 log.snssdk.com 是否被公司/校园网或 AdGuard 等拦截".to_string();
-    app.push_message("IID 注册失败：请放行 log.snssdk.com 或关闭反广告/代理/DNS 拦截后重试");
+        "Ошибка регистрации IID: проверьте, не блокируется ли log.snssdk.com сетью или AdGuard".to_string();
+    app.push_message("Ошибка регистрации IID: разрешите log.snssdk.com или отключите антирекламу/прокси/DNS и повторите");
     app.push_log(message);
 }
 
@@ -1491,14 +1491,14 @@ pub(super) fn switch_view(app: &mut App, action: MenuAction) -> Result<()> {
         MenuAction::Confirm => home::process_input(app)?,
         MenuAction::Config => {
             app.view = View::Config;
-            app.status = "进入配置编辑".to_string();
+            app.status = "Редактирование настроек".to_string();
             app.focus = Focus::Input;
         }
         MenuAction::Update => show_update_menu(app)?,
         MenuAction::History => show_history_menu(app)?,
         MenuAction::About => {
             app.view = View::About;
-            app.status = "关于".to_string();
+            app.status = "О программе".to_string();
         }
         MenuAction::Quit => app.should_quit = true,
     }
@@ -1515,8 +1515,8 @@ pub(super) fn trigger_menu_action(app: &mut App) -> Result<()> {
 }
 
 pub(super) fn start_search_task(app: &mut App, query: String) -> Result<()> {
-    info!(target: "ui", "开始搜索: {query}");
-    start_spinner(app, "搜索中…");
+    info!(target: "ui", "Starting search: {query}");
+    start_spinner(app, "Поиск…");
     let tx = app.worker_tx.clone();
     thread::spawn(move || {
         let result = search_books(&query);
@@ -1544,13 +1544,13 @@ fn poll_worker(app: &mut App) -> Result<()> {
             WorkerMsg::SearchDone(res) => match res {
                 Ok(results) => {
                     if results.is_empty() {
-                        app.status = "未找到匹配书籍".to_string();
+                        app.status = "Подходящие книги не найдены".to_string();
                         app.results.clear();
                         app.list_state.select(None);
                         app.focus = Focus::Input;
                     } else {
                         app.status = format!(
-                            "找到 {} 本书，使用上下键选择，Enter 预览/下载。",
+                            "Найдено книг: {}. ↑↓ — выбор, Enter — предпросмотр/загрузка.",
                             results.len()
                         );
                         app.results = results;
@@ -1559,10 +1559,10 @@ fn poll_worker(app: &mut App) -> Result<()> {
                     }
                 }
                 Err(err) => {
-                    app.status = format!("搜索失败: {err}");
-                    app.push_message(format!("搜索失败: {err}"));
+                    app.status = format!("Ошибка поиска: {err}");
+                    app.push_message(format!("Ошибка поиска: {err}"));
                     maybe_show_iid_failure(app, err.to_string());
-                    warn!(target: "ui", "搜索失败: {err}");
+                    warn!(target: "ui", "Ошибка поиска: {err}");
                 }
             },
             WorkerMsg::PreviewReady(res) => match *res {
@@ -1580,7 +1580,7 @@ fn poll_worker(app: &mut App) -> Result<()> {
                     app.book_name_modal_options = options;
                     app.book_name_modal_state.select(Some(0));
                     app.book_name_modal_sender = Some(respond_to);
-                    app.status = "请选择书名（下载已完成）".to_string();
+                    app.status = "Выберите название (загрузка завершена)".to_string();
                 }
             }
             WorkerMsg::AskFormat {
@@ -1594,7 +1594,7 @@ fn poll_worker(app: &mut App) -> Result<()> {
                     app.format_modal_options = options;
                     app.format_modal_state.select(Some(0));
                     app.format_modal_sender = Some(respond_to);
-                    app.status = "请选择输出格式（下载已完成）".to_string();
+                    app.status = "Выберите формат вывода (загрузка завершена)".to_string();
                 }
             }
             WorkerMsg::UpdateScanProgress {
@@ -1617,7 +1617,7 @@ fn poll_worker(app: &mut App) -> Result<()> {
                 }
                 app.view = View::Update;
                 app.status = format!(
-                    "扫描中：已检查 {}/{}，有更新 {} 本，无更新 {} 本",
+                    "Сканирование: проверено {}/{}, с обновлениями {}, без {}",
                     scanned,
                     total,
                     app.update_entries.len(),
@@ -1627,7 +1627,7 @@ fn poll_worker(app: &mut App) -> Result<()> {
             WorkerMsg::UpdateScanned(res) => match res {
                 Ok((updates, no_updates)) => {
                     if updates.is_empty() && no_updates.is_empty() {
-                        app.status = "未发现本地小说，先下载一本试试".to_string();
+                        app.status = "Локальных книг не найдено — сначала скачайте одну".to_string();
                         app.view = View::Home;
                     } else {
                         app.update_entries = updates;
@@ -1642,16 +1642,16 @@ fn poll_worker(app: &mut App) -> Result<()> {
                         }
                         let has = app.update_entries.len();
                         let none = app.update_no_updates.len();
-                        app.status = format!("扫描完成：有更新 {has} 本，无更新 {none} 本");
-                        info!(target: "ui", updates = has, no_updates = none, "扫描完成");
+                        app.status = format!("Сканирование завершено: с обновлениями {has}, без {none}");
+                        info!(target: "ui", updates = has, no_updates = none, "Scan complete");
                         app.view = View::Update;
                     }
                 }
                 Err(err) => {
-                    app.status = format!("扫描更新失败: {err}");
-                    app.push_message(format!("扫描更新失败: {err}"));
+                    app.status = format!("Ошибка сканирования обновлений: {err}");
+                    app.push_message(format!("Ошибка сканирования обновлений: {err}"));
                     maybe_show_iid_failure(app, err.to_string());
-                    warn!(target: "ui", "扫描更新失败: {err}");
+                    warn!(target: "ui", "Ошибка сканирования обновлений: {err}");
                 }
             },
             WorkerMsg::DownloadDone { book_id, result } => {
@@ -1663,19 +1663,19 @@ fn poll_worker(app: &mut App) -> Result<()> {
                     let notify = crate::base_system::app_update::should_notify_startup(&report);
                     if notify {
                         app.status = format!(
-                            "发现新版本 {}（当前 {}），在 About 页面可查看/不再提醒",
+                            "Доступна новая версия {} (текущая {}), смотрите на странице «О программе» / отключите напоминание",
                             report.latest.tag_name, report.current_tag
                         );
                         app.push_message(format!(
-                            "新版本可用: {} (当前 {})",
+                            "Доступна новая версия: {} (текущая {})",
                             report.latest.tag_name, report.current_tag
                         ));
                     }
                     app.app_update_report = Some(report);
                 }
                 Err(err) => {
-                    // 不影响使用：仅记录日志。
-                    warn!(target: "ui", "检查程序更新失败: {err}");
+                    // Non-blocking: log only.
+                    warn!(target: "ui", "App update check failed: {err}");
                 }
             },
         }
@@ -1685,9 +1685,9 @@ fn poll_worker(app: &mut App) -> Result<()> {
 
 pub(super) fn format_word_count(words: usize) -> String {
     if words >= 10_000 {
-        format!("{:.1} 万字", words as f64 / 10_000.0)
+        format!("{:.1} тыс. знаков", words as f64 / 10_000.0)
     } else {
-        format!("{} 字", words)
+        format!("{} знаков", words)
     }
 }
 

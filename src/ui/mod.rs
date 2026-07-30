@@ -1,6 +1,6 @@
-//! 交互层入口。
+//! Interactive UI entry.
 //!
-//! 包含 TUI 与无 UI（旧 CLI）两套交互实现。
+//! Includes TUI and no-UI (legacy CLI) implementations.
 
 pub mod noui;
 pub mod tui;
