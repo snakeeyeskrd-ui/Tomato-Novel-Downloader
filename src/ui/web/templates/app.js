@@ -882,7 +882,7 @@ function showPreviewModal(show) {
   modal.classList.toggle('hidden', !show);
   document.body.style.overflow = show ? 'hidden' : '';
   if (!show) {
-    // 关闭预览时，清理服务端因预览产生的封面缓存文件夹
+    // When closing preview, clean up cover cache folders created on the server
     if (currentPreviewBookId) {
       fetchWithCreds(`/api/preview/${encodeURIComponent(currentPreviewBookId)}/cleanup`, {
         method: 'POST',

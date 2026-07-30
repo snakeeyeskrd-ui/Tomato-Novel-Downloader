@@ -78,7 +78,7 @@ fn resolve_local_preview_cover_key(
     warn!(
         cover_url = ?meta.cover_url,
         detail_cover_url = ?meta.detail_cover_url,
-        "所有封面候选 URL 均获取失败"
+        "Не удалось получить ни один URL обложки"
     );
     None
 }
