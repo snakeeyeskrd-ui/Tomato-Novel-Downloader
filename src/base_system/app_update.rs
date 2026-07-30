@@ -60,10 +60,10 @@ where
             let detail = panic_payload_to_string(payload);
             warn!(
                 target: "app_update",
-                "捕获到上游 panic（{op_name}）：{detail}；已阻止进程崩溃"
+                "Перехвачен panic выше по стеку ({op_name}): {detail}; аварийное завершение предотвращено"
             );
             Err(anyhow!(
-                "app-update panic in {op_name}: {detail}（已拦截，程序继续运行）"
+                "app-update panic in {op_name}: {detail} (перехвачено, программа продолжает работу)"
             ))
         }
     }
@@ -208,7 +208,7 @@ fn docker_update_report(current_version: &str) -> UpdateCheckReport {
         latest: LatestRelease {
             tag_name: current_tag.clone(),
             name: Some("Docker build".to_string()),
-            body: Some("Docker 构建已禁用程序自更新，请通过重新拉取镜像进行升级。".to_string()),
+            body: Some("В Docker-сборке автообновление отключено. Обновите образ (docker pull).".to_string()),
             html_url: None,
             published_at: None,
         },
@@ -222,7 +222,7 @@ pub async fn fetch_latest_release_async() -> Result<LatestRelease> {
         return Ok(LatestRelease {
             tag_name: normalize_tag(env!("CARGO_PKG_VERSION")),
             name: Some("Docker build".to_string()),
-            body: Some("Docker 构建已禁用程序自更新，请通过重新拉取镜像进行升级。".to_string()),
+            body: Some("В Docker-сборке автообновление отключено. Обновите образ (docker pull).".to_string()),
             html_url: None,
             published_at: None,
         });

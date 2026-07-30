@@ -54,10 +54,10 @@ where
             let detail = panic_payload_to_string(payload);
             warn!(
                 target: "self_update",
-                "捕获到上游 panic（{op_name}）：{detail}；已阻止进程崩溃"
+                "Перехвачен panic выше по стеку ({op_name}): {detail}; аварийное завершение предотвращено"
             );
             Err(anyhow!(
-                "self-update panic in {op_name}: {detail}（已拦截，程序继续运行）"
+                "self-update panic in {op_name}: {detail} (перехвачено, программа продолжает работу)"
             ))
         }
     }
@@ -80,13 +80,13 @@ fn check_hotfix_and_apply_impl(current_version: &str) -> Result<SelfUpdateOutcom
     if cfg!(feature = "docker") {
         warn!(
             target: "self_update",
-            "Docker 构建已禁用热更新/自更新，请通过重新拉取镜像升级"
+            "В Docker-сборке горячие/автообновления отключены. Обновите образ (docker pull)."
         );
         return Ok(SelfUpdateOutcome::Skipped);
     }
 
     if is_cargo_run_like() {
-        info!(target: "self_update", "检测到 cargo run/开发态运行，跳过强制热更新检查");
+        info!(target: "self_update", "Обнаружен запуск через cargo run/в режиме разработки — принудительная проверка горячих обновлений пропущена");
         return Ok(SelfUpdateOutcome::UpToDate);
     }
 
@@ -101,7 +101,7 @@ fn check_hotfix_and_apply_impl(current_version: &str) -> Result<SelfUpdateOutcom
     if let Some(expected) = matched.sha256.as_deref() {
         let self_hash = compute_file_sha256(&current_executable_path()?)?;
         if !eq_hash(&self_hash, expected) {
-            info!(target: "self_update", "检测到热补丁（SHA256 不同），开始更新…");
+            info!(target: "self_update", "Обнаружен хотфикс (SHA256 отличается), начинаю обновление…");
             start_update(&matched)?;
             return Ok(SelfUpdateOutcome::UpdateLaunched);
         }
@@ -145,12 +145,12 @@ fn check_for_updates_impl(current_version: &str, auto_yes: bool) -> Result<SelfU
     if cfg!(feature = "docker") {
         warn!(
             target: "self_update",
-            "Docker 构建已禁用自更新，请通过重新拉取镜像升级"
+            "В Docker-сборке автообновление отключено. Обновите образ (docker pull)."
         );
         return Ok(SelfUpdateOutcome::Skipped);
     }
 
-    info!(target: "self_update", "正在检查程序更新…");
+    info!(target: "self_update", "Проверка обновлений программы…");
 
     let current_tag = format!("v{current_version}");
     let matched = get_latest_release_asset()?;
@@ -160,20 +160,20 @@ fn check_for_updates_impl(current_version: &str, auto_yes: bool) -> Result<SelfU
             target: "self_update",
             latest = %matched.tag_name,
             current = %current_tag,
-            "检测到新版本"
+            "Обнаружена новая версия"
         );
 
         if !auto_yes {
             let mut input = String::new();
-            print!("是否下载并升级到最新版？[Y/n]: ");
+            print!("Скачать и обновиться до последней версии? [Y/n]: ");
             std::io::stdout().flush().ok();
             if std::io::stdin().read_line(&mut input).is_err() {
-                warn!(target: "self_update", "无法读取用户输入，跳过升级");
+                warn!(target: "self_update", "Не удалось прочитать ввод — обновление пропущено");
                 return Ok(SelfUpdateOutcome::Skipped);
             }
             let ans = input.trim().to_ascii_lowercase();
             if !(ans.is_empty() || ans == "y" || ans == "yes") {
-                warn!(target: "self_update", "用户取消升级");
+                warn!(target: "self_update", "Пользователь отменил обновление");
                 return Ok(SelfUpdateOutcome::Skipped);
             }
         }
@@ -182,12 +182,12 @@ fn check_for_updates_impl(current_version: &str, auto_yes: bool) -> Result<SelfU
         return Ok(SelfUpdateOutcome::UpdateLaunched);
     }
 
-    info!(target: "self_update", "本地版本与最新相同，检查热补丁…");
+    info!(target: "self_update", "Локальная версия совпадает с последней, проверка хотфиксов…");
 
     if let Some(expected) = matched.sha256.as_deref() {
         let self_hash = compute_file_sha256(&current_executable_path()?)?;
         if !eq_hash(&self_hash, expected) {
-            info!(target: "self_update", "检测到热补丁（SHA256 不同），开始更新…");
+            info!(target: "self_update", "Обнаружен хотфикс (SHA256 отличается), начинаю обновление…");
             start_update(&matched)?;
             return Ok(SelfUpdateOutcome::UpdateLaunched);
         }
@@ -330,10 +330,10 @@ fn get_accelerated_url(original_url: &str) -> String {
     // https://github.com/<owner>/<repo>/releases/download/<tag>/<asset>
     if let Some(tail) = original_url.split("/releases/download/").nth(1) {
         let url = format!("https://dl.zhongbai233.com/release/{tail}");
-        info!(target: "self_update", "使用加速下载地址: {url}");
+        info!(target: "self_update", "Используется ускоренный адрес загрузки: {url}");
         url
     } else {
-        warn!(target: "self_update", "无法解析加速链接，回退到原始地址: {original_url}");
+        warn!(target: "self_update", "Не удалось разобрать ускоренную ссылку, откат к исходному адресу: {original_url}");
         original_url.to_string()
     }
 }
@@ -383,7 +383,7 @@ fn patch_run_sh_if_exists(new_exe: &Path) -> Result<()> {
 
     if changed {
         fs::write(&run_sh, &new_content).context("write updated run.sh")?;
-        info!(target: "self_update", "已更新 run.sh 中的可执行文件名");
+        info!(target: "self_update", "Имя исполняемого файла в run.sh обновлено");
     }
 
     Ok(())
@@ -394,13 +394,13 @@ fn start_update(matched: &MatchedReleaseAsset) -> Result<()> {
         target: "self_update",
         name = %matched.release_name,
         tag = %matched.tag_name,
-        "开始下载最新版本"
+        "Начинаю загрузку последней версии"
     );
 
     let tmp_dir = TempDir::new().context("create temp dir")?;
     let tmp_file = download_and_verify(tmp_dir.path(), matched)?;
 
-    info!(target: "self_update", "下载完成，开始应用更新…");
+    info!(target: "self_update", "Загрузка завершена, применяю обновление…");
 
     if cfg!(windows) {
         windows_apply_and_restart(&tmp_file)?;
@@ -412,10 +412,10 @@ fn start_update(matched: &MatchedReleaseAsset) -> Result<()> {
 
     // 更新同目录的 run.sh（如果存在），将旧版本号文件名替换为规范名
     if let Err(e) = patch_run_sh_if_exists(&new_exe) {
-        warn!(target: "self_update", "更新 run.sh 失败: {e}");
+        warn!(target: "self_update", "Не удалось обновить run.sh: {e}");
     }
 
-    info!(target: "self_update", "更新完成，正在重启程序…");
+    info!(target: "self_update", "Обновление завершено, перезапускаю программу…");
 
     let mut cmd = Command::new(&new_exe);
     cmd.args(std::env::args_os().skip(1));
@@ -550,7 +550,7 @@ fn download_and_verify(tmp_dir: &Path, matched: &MatchedReleaseAsset) -> Result<
     {
         let _ = fs::remove_file(&out_path);
         return Err(anyhow!(
-            "SHA256 校验失败：下载文件 {} 的哈希 {} 与期望 {} 不符",
+            "Ошибка проверки SHA256: хеш скачанного файла {} равен {}, ожидалось {}",
             out_path.display(),
             actual,
             expected
@@ -673,6 +673,6 @@ fn windows_apply_and_restart(tmp_file: &Path) -> Result<()> {
         .spawn()
         .context("spawn update bat")?;
 
-    info!(target: "self_update", "请稍等，更新完成后将自动重启程序。");
+    info!(target: "self_update", "Подождите, после обновления программа перезапустится автоматически.");
     Ok(())
 }

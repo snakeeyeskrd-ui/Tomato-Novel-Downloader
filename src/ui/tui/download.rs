@@ -189,15 +189,20 @@ pub(super) fn apply_download_done(app: &mut App, book_id: String, result: Result
 }
 
 fn localize_option_label(label: &str) -> String {
-    // Match Chinese labels from downloader::collect_*_options (kept as escapes for RU UI).
+    // Source labels in downloader::collect_*_options are already Russian;
+    // keep Chinese→Russian mapping for backward compatibility.
     match label {
-        "\u{9ed8}\u{8ba4}\u{4e66}\u{540d}" => "Название по умолчанию".to_string(),
-        "\u{539f}\u{59cb}\u{4e66}\u{540d}" => "Оригинальное название".to_string(),
-        "\u{77ed}\u{4e66}\u{540d}" => "Короткое название".to_string(),
-        "txt \u{683c}\u{5f0f}" => "Формат txt".to_string(),
-        "epub \u{683c}\u{5f0f}" => "Формат epub".to_string(),
-        "pdf \u{683c}\u{5f0f}" => "Формат pdf".to_string(),
-        "\u{6563}\u{88c5}\u{6587}\u{4ef6}" => "Отдельные файлы".to_string(),
+        "Название по умолчанию" | "\u{9ed8}\u{8ba4}\u{4e66}\u{540d}" => {
+            "Название по умолчанию".to_string()
+        }
+        "Оригинальное название" | "\u{539f}\u{59cb}\u{4e66}\u{540d}" => {
+            "Оригинальное название".to_string()
+        }
+        "Короткое название" | "\u{77ed}\u{4e66}\u{540d}" => "Короткое название".to_string(),
+        "Формат txt" | "txt \u{683c}\u{5f0f}" => "Формат txt".to_string(),
+        "Формат epub" | "epub \u{683c}\u{5f0f}" => "Формат epub".to_string(),
+        "Формат pdf" | "pdf \u{683c}\u{5f0f}" => "Формат pdf".to_string(),
+        "Отдельные файлы" | "\u{6563}\u{88c5}\u{6587}\u{4ef6}" => "Отдельные файлы".to_string(),
         other => other.to_string(),
     }
 }

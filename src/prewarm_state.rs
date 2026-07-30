@@ -9,7 +9,7 @@ static PREWARMING: AtomicBool = AtomicBool::new(false);
 static PREWARM_ERROR: OnceLock<Mutex<Option<String>>> = OnceLock::new();
 
 #[allow(dead_code)]
-const IID_BLOCK_HINT: &str = "IID 注册需要访问 https://log.snssdk.com/service/2/device_register/。番茄把该域名用于设备注册/广告分发，因此它经常会被公司/校园网、DNS 过滤、代理规则或 AdGuard/uBlock 等反广告插件拦截。请把 log.snssdk.com 加入放行列表，或临时关闭相关拦截后重试。";
+const IID_BLOCK_HINT: &str = "Для регистрации IID нужен доступ к https://log.snssdk.com/service/2/device_register/. Fanqie использует этот домен для регистрации устройства и рекламы, поэтому его часто блокируют корпоративные/кампусные сети, DNS-фильтры, правила прокси или блокировщики вроде AdGuard/uBlock. Добавьте log.snssdk.com в белый список или временно отключите блокировку и повторите попытку.";
 
 pub fn mark_prewarm_start() {
     set_prewarm_error(None);
@@ -42,9 +42,9 @@ pub fn prewarm_error() -> Option<String> {
 pub fn format_iid_register_failure(err: impl AsRef<str>) -> String {
     let err = err.as_ref().trim();
     if err.contains("log.snssdk.com") && err.contains("AdGuard") {
-        return format!("IID 注册失败：{err}");
+        return format!("Ошибка регистрации IID: {err}");
     }
-    format!("IID 注册失败：{err}\n\n{IID_BLOCK_HINT}")
+    format!("Ошибка регистрации IID: {err}\n\n{IID_BLOCK_HINT}")
 }
 
 fn set_prewarm_error(err: Option<String>) {

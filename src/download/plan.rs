@@ -35,7 +35,7 @@ pub fn prepare_download_plan(
     book_id: &str,
     meta_hint: BookMeta,
 ) -> Result<DownloadPlan> {
-    info!(target: "download", book_id, "准备下载计划");
+    info!(target: "download", book_id, "Подготовка плана загрузки");
     let directory = DirectoryClient::new().context("init DirectoryClient")?;
     let (dir_url, _content_urls) = resolve_api_urls(config)?;
     let api_url = dir_url.as_deref();
@@ -51,7 +51,7 @@ pub fn prepare_download_plan(
                 target: "download",
                 book_id,
                 error = %e,
-                "官方 API 获取目录失败，尝试使用 web 回退"
+                "Официальный API не вернул оглавление, пробуем web fallback"
             );
             if let Some(plan) = web_plan {
                 return Ok(plan);
@@ -64,12 +64,12 @@ pub fn prepare_download_plan(
         warn!(
             target: "download",
             book_id,
-            "官方 API 目录为空，尝试使用 web 回退"
+            "Оглавление официального API пусто, пробуем web fallback"
         );
         if let Some(plan) = web_plan {
             return Ok(plan);
         }
-        return Err(anyhow!("目录为空"));
+        return Err(anyhow!("Оглавление пусто"));
     }
 
     let meta_from_dir: BookMeta = dir.meta.clone().into();
@@ -126,7 +126,7 @@ pub fn prepare_download_plan(
     book_id: &str,
     meta_hint: BookMeta,
 ) -> Result<DownloadPlan> {
-    info!(target: "download", book_id, "准备下载计划（no-official）");
+    info!(target: "download", book_id, "Подготовка плана загрузки (no-official)");
     prepare_download_plan_web(config, book_id, meta_hint)
 }
 
@@ -172,7 +172,7 @@ fn prepare_download_plan_web(
     book_id: &str,
     meta_hint: BookMeta,
 ) -> Result<DownloadPlan> {
-    info!(target: "download", book_id, "准备下载计划（web fallback）");
+    info!(target: "download", book_id, "Подготовка плана загрузки (web fallback)");
 
     let web_cfg = FanqieWebConfig {
         request_timeout: Duration::from_secs(config.request_timeout.max(1)),
@@ -183,9 +183,9 @@ fn prepare_download_plan_web(
 
     let chapter_values = web
         .fetch_chapter_list(book_id)
-        .ok_or_else(|| anyhow!("获取章节列表失败"))?;
+        .ok_or_else(|| anyhow!("Не удалось получить список глав"))?;
     if chapter_values.is_empty() {
-        return Err(anyhow!("目录为空"));
+        return Err(anyhow!("Оглавление пусто"));
     }
 
     let mut chapters: Vec<ChapterRef> = chapter_values
@@ -194,7 +194,7 @@ fn prepare_download_plan_web(
         .collect();
     // 保底：如果解析失败导致为空，至少让用户得到一个明确错误
     if chapters.is_empty() {
-        return Err(anyhow!("解析章节列表失败（未能提取 item_id/title）"));
+        return Err(anyhow!("Не удалось разобрать список глав (не извлечены item_id/title)"));
     }
 
     let (
@@ -274,7 +274,7 @@ pub(crate) fn merge_chapters_with_web(
 
     for mut ch in official {
         if !seen.insert(ch.id.clone()) {
-            warn!(target: "download", id = %ch.id, title = %ch.title, "跳过官方源中的重复章节");
+            warn!(target: "download", id = %ch.id, title = %ch.title, "Пропуск дубликата главы из официального источника");
             continue;
         }
         if ch.title.trim().is_empty()
@@ -410,7 +410,7 @@ fn download_web_cover(
 
     // 检查并迁移旧版“书名.*”封面；新版统一保存为 cover.*。
     if let Some(existing) = book_paths::migrate_legacy_cover_file(cover_dir, book_name) {
-        info!(target: "download", book_id, path = %existing.display(), "封面文件已存在，跳过下载");
+        info!(target: "download", book_id, path = %existing.display(), "Файл обложки уже есть, загрузка пропущена");
         return;
     }
 
@@ -425,7 +425,7 @@ fn download_web_cover(
     let web = match FanqieWebNetwork::new(web_cfg) {
         Ok(w) => w,
         Err(e) => {
-            warn!(target: "download", book_id, error = %e, "初始化 FanqieWebNetwork 失败，跳过封面下载");
+            warn!(target: "download", book_id, error = %e, "Не удалось инициализировать FanqieWebNetwork, загрузка обложки пропущена");
             return;
         }
     };
@@ -433,7 +433,7 @@ fn download_web_cover(
     let img_url = match html_img_cover_url {
         Some(ref u) if !u.trim().is_empty() => u.as_str(),
         _ => {
-            warn!(target: "download", book_id, "web 页面未提取到封面 URL，跳过封面下载");
+            warn!(target: "download", book_id, "URL обложки не извлечён со страницы web, загрузка пропущена");
             return;
         }
     };
@@ -456,7 +456,7 @@ fn download_web_cover(
                     url = img_url,
                     attempt = attempt + 1,
                     max_retries,
-                    "web 封面下载失败，重试中"
+                    "Не удалось скачать обложку с web, повтор"
                 );
                 continue;
             }
@@ -467,7 +467,7 @@ fn download_web_cover(
             && &bytes[4..8] == b"ftyp"
             && matches!(&bytes[8..12], b"heic" | b"heix" | b"mif1" | b"msf1")
         {
-            warn!(target: "download", book_id, "web 封面为 HEIC 格式，EPUB 不支持，跳过");
+            warn!(target: "download", book_id, "Обложка с web в формате HEIC, EPUB не поддерживает — пропуск");
             return;
         }
 
@@ -482,10 +482,10 @@ fn download_web_cover(
 
         let path = book_paths::canonical_cover_path(cover_dir, ext);
         if std::fs::write(&path, &bytes).is_ok() {
-            info!(target: "download", book_id, path = %path.display(), "web 封面下载成功");
+            info!(target: "download", book_id, path = %path.display(), "Обложка с web успешно скачана");
             return;
         }
     }
 
-    warn!(target: "download", book_id, "web 封面下载失败（已重试 {} 次）", max_retries);
+    warn!(target: "download", book_id, "Не удалось скачать обложку с web (после {} попыток)", max_retries);
 }
