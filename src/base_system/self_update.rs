@@ -85,6 +85,16 @@ fn check_hotfix_and_apply_impl(current_version: &str) -> Result<SelfUpdateOutcom
         return Ok(SelfUpdateOutcome::Skipped);
     }
 
+    // Custom / no-official builds never match the official release SHA256.
+    // Skipping prevents the launcher from overwriting a localized build with the upstream Chinese binary.
+    if cfg!(not(feature = "official-api")) {
+        info!(
+            target: "self_update",
+            "Сборка без official-api: принудительный хотфикс пропущен (локальный бинарник не будет заменён официальным релизом)"
+        );
+        return Ok(SelfUpdateOutcome::Skipped);
+    }
+
     if is_cargo_run_like() {
         info!(target: "self_update", "Обнаружен запуск через cargo run/в режиме разработки — принудительная проверка горячих обновлений пропущена");
         return Ok(SelfUpdateOutcome::UpToDate);
