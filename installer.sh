@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # 
-# 文件名：installer.sh
-# 功能：
-#   1. 自动通过 GitHub API 获取 Tomato-Novel-Downloader 最新版本
-#   2. 询问用户安装路径（默认脚本执行路径；Termux 下默认 $HOME）
-#   3. 支持 2 种下载方式：
-#        (1) 直连 GitHub
-#        (2) 项目加速源（https://dl.zhongbai233.com/）加速
-#   4. Termux 环境下生成 run.sh（默认 --server）
-#   5. Linux / macOS (arm64 & Intel x86_64) 下下载对应架构二进制并赋予执行权限
+# Имя файла: installer.sh
+# Назначение:
+#   1. Автоматически получает последнюю версию Tomato-Novel-Downloader через GitHub API
+#   2. Спрашивает путь установки (по умолчанию — каталог запуска скрипта; в Termux — $HOME)
+#   3. Поддерживает 2 способа загрузки:
+#        (1) напрямую с GitHub
+#        (2) через ускоряющее зеркало проекта (https://dl.zhongbai233.com/)
+#   4. В среде Termux создаёт run.sh (по умолчанию --server)
+#   5. На Linux / macOS (arm64 и Intel x86_64) скачивает бинарник нужной архитектуры и выдаёт права на выполнение
 # 
-# 使用方法：
+# Использование:
 
 #   chmod +x installer.sh
 #   ./installer.sh
@@ -18,7 +18,7 @@
 set -e
 
 #####################################
-# 0. 通用辅助函数
+# 0. Общие вспомогательные функции
 #####################################
 
 log_info()  { printf "\033[1;32m[INFO]\033[0m %s\n" "$*"; }
@@ -42,7 +42,7 @@ if command_exists ldd; then
         IS_MUSL=true
     fi
 fi
-# Fallback: common musl loader paths
+# Запасной вариант: типичные пути загрузчика musl
 if [ -e /lib/ld-musl-x86_64.so.1 ] || [ -e /lib/ld-musl-aarch64.so.1 ] || [ -e /lib/ld-musl-armhf.so.1 ]; then
     IS_MUSL=true
 fi
@@ -53,7 +53,7 @@ if $IS_TERMUX; then
 fi
 
 echo ""
-echo "请输入安装目录（默认：${DEFAULT_DIR}）："
+echo "Введите каталог установки (по умолчанию: ${DEFAULT_DIR}):"
 read -r INPUT_DIR
 if [ -z "${INPUT_DIR}" ]; then
     INSTALL_DIR="${DEFAULT_DIR}"
@@ -67,18 +67,18 @@ if $IS_TERMUX; then
             ;;
         *)
             echo ""
-            log_warn "检测到 Termux：你选择的安装目录可能无法执行（可能出现 Permission denied）。"
-            log_warn "建议安装到 Termux 目录内（HOME 或 PREFIX）："
+            log_warn "Обнаружен Termux: выбранный каталог установки может быть недоступен для выполнения (возможен Permission denied)."
+            log_warn "Рекомендуется устанавливать внутрь каталогов Termux (HOME или PREFIX):"
             echo "  - ${HOME}"
             echo "  - ${PREFIX}"
             echo ""
-            echo "是否仍然继续使用该目录？(y/N)："
+            echo "Всё равно продолжить с этим каталогом? (y/N):"
             read -r CONFIRM_DIR
             case "$CONFIRM_DIR" in
                 y|Y) ;;
                 *)
                     INSTALL_DIR="${HOME}"
-                    log_info "已改为安装到：${INSTALL_DIR}"
+                    log_info "Каталог установки изменён на: ${INSTALL_DIR}"
                     ;;
             esac
             ;;
@@ -87,52 +87,52 @@ fi
 
 if [ ! -d "$INSTALL_DIR" ]; then
     echo ""
-    log_warn "目录不存在，是否创建：${INSTALL_DIR} ? (y/N)："
+    log_warn "Каталог не существует. Создать: ${INSTALL_DIR} ? (y/N):"
     read -r CREATE_DIR
     case "$CREATE_DIR" in
         y|Y)
             mkdir -p "$INSTALL_DIR"
-            log_info "已创建目录：${INSTALL_DIR}"
+            log_info "Каталог создан: ${INSTALL_DIR}"
             ;;
         *)
-            log_warn "未创建目录，安装退出。"
+            log_warn "Каталог не создан, установка прервана."
             exit 1
             ;;
     esac
 fi
 
 echo ""
-log_info "正在从 GitHub API 获取最新版本信息..."
+log_info "Получение сведений о последней версии через GitHub API..."
 GITHUB_API_URL="https://api.github.com/repos/zhongbai2333/Tomato-Novel-Downloader/releases/latest"
 if command_exists curl; then
     TAG_NAME=$(curl -s "${GITHUB_API_URL}" | grep -m1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 elif command_exists wget; then
     TAG_NAME=$(wget -qO- "${GITHUB_API_URL}" | grep -m1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 else
-    log_error "系统中未检测到 curl 或 wget，请先安装其中之一。"
+    log_error "В системе не найдены curl или wget. Установите один из них."
     exit 1
 fi
 
 if [ -z "${TAG_NAME}" ]; then
-    log_error "无法从 GitHub API 获取 tag_name，请检查网络或仓库是否存在。"
+    log_error "Не удалось получить tag_name из GitHub API. Проверьте сеть или существование репозитория."
     exit 1
 fi
 
 VERSION="${TAG_NAME#v}"
-log_info "最新版本：${TAG_NAME}（VERSION=${VERSION}）"
+log_info "Последняя версия: ${TAG_NAME} (VERSION=${VERSION})"
 
 echo ""
-echo "请选择下载方式（输入序号，默认 1）："
-echo "  1) 直连 GitHub"
-echo "  2) 使用项目加速源 (https://dl.zhongbai233.com/) 加速"
+echo "Выберите способ загрузки (введите номер, по умолчанию 1):"
+echo "  1) Напрямую с GitHub"
+echo "  2) Через ускоряющее зеркало проекта (https://dl.zhongbai233.com/)"
 read -r ACCEL_CHOICE
 ACCEL_CHOICE="${ACCEL_CHOICE:-1}"
 case "$ACCEL_CHOICE" in
     1) ACCEL_METHOD="direct" ;;
     2) ACCEL_METHOD="accel" ;;
-    *) log_warn "无效输入，使用默认直连。"; ACCEL_METHOD="direct" ;;
+    *) log_warn "Неверный ввод, используется прямая загрузка по умолчанию."; ACCEL_METHOD="direct" ;;
 esac
-log_info "选择的下载方式：${ACCEL_METHOD}"
+log_info "Выбранный способ загрузки: ${ACCEL_METHOD}"
 
 PLATFORM="$(uname)"
 ARCH="$(uname -m)"
@@ -140,7 +140,7 @@ BINARY_NAME=""
 case "$PLATFORM" in
     Linux)
         if $IS_TERMUX; then
-            # 检测 Termux 架构：aarch64 → arm64, armv7l → arm32
+            # Определение архитектуры Termux: aarch64 → arm64, armv7l → arm32
             case "$ARCH" in
                 aarch64|arm64)
                     ANDROID_ARCH="arm64"
@@ -149,12 +149,12 @@ case "$PLATFORM" in
                     ANDROID_ARCH="arm32"
                     ;;
                 *)
-                    log_error "不支持的 Android 架构 [${ARCH}]！仅支持 aarch64/arm64 与 armv7l/arm。"
+                    log_error "Неподдерживаемая архитектура Android [${ARCH}]! Поддерживаются только aarch64/arm64 и armv7l/arm."
                     exit 1
                     ;;
             esac
             BINARY_NAME="TomatoNovelDownloader-Android_${ANDROID_ARCH}-v${VERSION}"
-            log_info "检测到 Termux（架构：${ANDROID_ARCH}），将使用 Android 原生版本。"
+            log_info "Обнаружен Termux (архитектура: ${ANDROID_ARCH}), будет использована нативная Android-версия."
         else
             case "$ARCH" in
                 x86_64|amd64)
@@ -172,7 +172,7 @@ case "$PLATFORM" in
                     fi
                     ;;
                 *)
-                    log_error "不支持的 Linux 架构 [${ARCH}]！仅支持 x86_64/amd64 与 aarch64/arm64。"
+                    log_error "Неподдерживаемая архитектура Linux [${ARCH}]! Поддерживаются только x86_64/amd64 и aarch64/arm64."
                     exit 1
                     ;;
             esac
@@ -187,13 +187,13 @@ case "$PLATFORM" in
                 BINARY_NAME="TomatoNovelDownloader-macOS_amd64-v${VERSION}"
                 ;;
             *)
-                log_error "不支持的 macOS 架构 [${ARCH}]！仅支持 arm64 与 x86_64。"
+                log_error "Неподдерживаемая архитектура macOS [${ARCH}]! Поддерживаются только arm64 и x86_64."
                 exit 1
                 ;;
         esac
         ;;
     *)
-        log_error "不支持的平台 [${PLATFORM}]！仅支持 Linux、macOS（Darwin）以及 Termux。"
+        log_error "Неподдерживаемая платформа [${PLATFORM}]! Поддерживаются только Linux, macOS (Darwin) и Termux."
         exit 1
         ;;
 esac
@@ -206,13 +206,13 @@ case "$ACCEL_METHOD" in
 esac
 
 echo ""
-log_info "准备下载：${BINARY_NAME}"
-echo "下载链接：${DOWNLOAD_URL}"
-echo "安装目标目录：${INSTALL_DIR}"
+log_info "Подготовка к загрузке: ${BINARY_NAME}"
+echo "Ссылка для загрузки: ${DOWNLOAD_URL}"
+echo "Каталог установки: ${INSTALL_DIR}"
 
 TARGET_BINARY_PATH="${INSTALL_DIR}/${BINARY_NAME}"
 if [ -f "$TARGET_BINARY_PATH" ]; then
-    log_warn "目标目录已有同名文件，将会覆盖：${TARGET_BINARY_PATH}"
+    log_warn "В целевом каталоге уже есть файл с таким именем, он будет перезаписан: ${TARGET_BINARY_PATH}"
     rm -f "$TARGET_BINARY_PATH"
 fi
 
@@ -222,73 +222,73 @@ download_file() {
     elif command_exists curl; then
         curl -4 -L -o "${TARGET_BINARY_PATH}" "${DOWNLOAD_URL}"
     else
-        log_error "未检测到 wget 或 curl，请先安装其中之一。"
+        log_error "Не найдены wget или curl. Установите один из них."
         return 127
     fi
 }
 
-log_info "开始下载..."
+log_info "Начало загрузки..."
 download_file || {
-    log_error "下载失败，请检查网络、代理或 URL。"
+    log_error "Загрузка не удалась. Проверьте сеть, прокси или URL."
     exit 1
 }
 
 if [ ! -f "$TARGET_BINARY_PATH" ] || [ ! -s "$TARGET_BINARY_PATH" ]; then
-    log_error "下载的文件不存在或为空。"
+    log_error "Загруженный файл отсутствует или пуст."
     exit 1
 fi
 
 chmod +x "$TARGET_BINARY_PATH"
-log_info "下载完成并赋予可执行权限：${TARGET_BINARY_PATH}"
+log_info "Загрузка завершена, права на выполнение выданы: ${TARGET_BINARY_PATH}"
 
-# 重命名为规范名（不含版本号），与程序自更新后的命名保持一致
+# Переименование в каноническое имя (без номера версии), как после автообновления программы
 CANONICAL_NAME="${BINARY_NAME%-v*}"
 if [ "$CANONICAL_NAME" != "$BINARY_NAME" ]; then
     CANONICAL_PATH="${INSTALL_DIR}/${CANONICAL_NAME}"
     mv "${TARGET_BINARY_PATH}" "${CANONICAL_PATH}"
     chmod +x "${CANONICAL_PATH}"
     TARGET_BINARY_PATH="${CANONICAL_PATH}"
-    log_info "已重命名为规范名：${CANONICAL_NAME}"
+    log_info "Переименовано в каноническое имя: ${CANONICAL_NAME}"
 fi
 
 if $IS_TERMUX; then
     echo ""
-    log_info "生成 run.sh..."
+    log_info "Создание run.sh..."
     RUN_SH_PATH="${INSTALL_DIR}/run.sh"
     cat > "$RUN_SH_PATH" <<EOF
 #!/usr/bin/env bash
-# Termux / MT 管理器环境：运行 Android 原生 TomatoNovelDownloader（默认启动 Web UI 服务器模式）
-# 你可以用环境变量控制监听地址与密码锁：
+# Среда Termux / MT Manager: запуск нативного Android TomatoNovelDownloader (по умолчанию режим Web UI-сервера)
+# Адрес прослушивания и пароль можно задать переменными окружения:
 #   TOMATO_WEB_ADDR=0.0.0.0:18423
-#   TOMATO_WEB_PASSWORD=你的密码
+#   TOMATO_WEB_PASSWORD=ваш_пароль
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 termux-open-url "http://127.0.0.1:18423/" >/dev/null 2>&1 || true
 exec "\${SCRIPT_DIR}/${CANONICAL_NAME}" --server "\$@"
 EOF
     chmod +x "$RUN_SH_PATH"
-    log_info "已生成：${RUN_SH_PATH}"
+    log_info "Создан: ${RUN_SH_PATH}"
 
     echo ""
-    echo "安装完成，请执行："
+    echo "Установка завершена. Выполните:"
     echo "    cd ${INSTALL_DIR}"
     echo "    ./run.sh"
     echo ""
-    echo "提示：如果运行时出现 Permission denied，请把安装目录放在 Termux 目录内（建议 ${HOME}）。"
+    echo "Подсказка: если при запуске появляется Permission denied, разместите каталог установки внутри Termux (рекомендуется ${HOME})."
 elif [ "$PLATFORM" = "Linux" ]; then
     echo ""
-    log_info "检测到 Linux 环境。"
-    echo "安装完成，文件位于：${TARGET_BINARY_PATH}"
-    echo "运行方式："
+    log_info "Обнаружена среда Linux."
+    echo "Установка завершена, файл находится здесь: ${TARGET_BINARY_PATH}"
+    echo "Запуск:"
     echo "    cd ${INSTALL_DIR}"
     echo "    ./${CANONICAL_NAME}"
 elif [ "$PLATFORM" = "Darwin" ]; then
     echo ""
-    log_info "检测到 macOS 环境。"
-    echo "安装完成，文件位于：${TARGET_BINARY_PATH}"
-    echo "运行方式："
+    log_info "Обнаружена среда macOS."
+    echo "Установка завершена, файл находится здесь: ${TARGET_BINARY_PATH}"
+    echo "Запуск:"
     echo "    cd ${INSTALL_DIR}"
     echo "    ./${CANONICAL_NAME}"
 fi
 
-log_info "全部完成。"
+log_info "Всё готово."
 exit 0
