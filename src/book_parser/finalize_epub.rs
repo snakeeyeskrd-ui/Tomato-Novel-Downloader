@@ -57,9 +57,9 @@ pub(super) fn finalize_epub(
     // 将完结状态追加到标签字符串中（与 Python 版本行为一致）
     let tags = if manager.finished == Some(true) || manager.end {
         if manager.tags.is_empty() {
-            "已完结".to_string()
+            "Завершена".to_string()
         } else {
-            format!("{}|已完结", manager.tags)
+            format!("{}|Завершена", manager.tags)
         }
     } else {
         manager.tags.clone()
@@ -97,13 +97,13 @@ pub(super) fn finalize_epub(
     // 简单的介绍页
     let intro_desc_html = render_description_xhtml_fragment(&manager.description);
     let intro_html = format!(
-        "<p>书名：{}</p><p>作者：{}</p><p>标签：{}</p><p>简介：</p>{}",
+        "<p>Название: {}</p><p>Автор: {}</p><p>Теги: {}</p><p>Описание:</p>{}",
         escape_html(&manager.book_name),
         escape_html(&manager.author),
         escape_html(&tags),
         intro_desc_html
     );
-    let _ = epub_gen.add_aux_page_named("aux_00000.xhtml".to_string(), "简介", &intro_html, true);
+    let _ = epub_gen.add_aux_page_named("aux_00000.xhtml".to_string(), "Описание", &intro_html, true);
 
     // #201: 分卷标题
     let known_chapter_ids: HashSet<String> = chapters
@@ -252,7 +252,7 @@ pub(super) fn finalize_epub(
 
     for (ch_idx, ch) in chapters.iter().enumerate() {
         let chapter_id = ch.get("id").and_then(|v| v.as_str()).unwrap_or("0");
-        let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("章节");
+        let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("Глава");
         let content_html = ch.get("content").and_then(|v| v.as_str()).unwrap_or("");
 
         info!(
@@ -759,7 +759,7 @@ pub(super) fn finalize_epub(
     let toc_html = build_inline_toc_html(&toc_entries, &toc_volumes);
     let _ = epub_gen.add_aux_page_named(
         "table-of-contents.html".to_string(),
-        "目录",
+        "Содержание",
         &toc_html,
         true,
     );
@@ -777,7 +777,7 @@ pub(super) fn finalize_epub(
             );
             comment_page_for_chapter.insert(b.chapter_id.clone(), comment_file.clone());
 
-            let page_title = format!("{} - 段评", b.title);
+            let page_title = format!("{} — комментарии к абзацам", b.title);
             let page_html = render_segment_comment_page(
                 &b.title,
                 &chapter_file,
@@ -1190,7 +1190,7 @@ fn embed_inline_images_chapter_named(
 fn build_inline_toc_html(toc_entries: &[(String, String)], volumes: &[String]) -> String {
     let mut out = String::new();
     out.push_str("<nav epub:type=\"toc\" id=\"inline-toc\">\n");
-    out.push_str("  <p class=\"no-indent\">点击章节标题可跳转到对应正文位置。</p>\n");
+    out.push_str("  <p class=\"no-indent\">Нажмите на название главы, чтобы перейти к тексту.</p>\n");
 
     let mut current_volume = String::new();
     let mut list_open = false;

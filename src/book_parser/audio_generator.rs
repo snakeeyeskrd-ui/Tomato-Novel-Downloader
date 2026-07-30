@@ -187,18 +187,18 @@ fn image_to_jpeg_bytes(bytes: &[u8]) -> Option<Vec<u8>> {
 fn export_audiobook_cover(book_folder: &Path, book_name: &str, audio_dir: &Path) {
     let Some(cover_path) = book_paths::find_existing_cover_file(book_folder, Some(book_name))
     else {
-        warn!(target: "book_manager", "未找到书籍封面，跳过有声书 cover.jpg 导出");
+        warn!(target: "book_manager", "Обложка книги не найдена — экспорт cover.jpg для аудиокниги пропущен");
         return;
     };
 
     let bytes = match fs::read(&cover_path) {
         Ok(bytes) if !bytes.is_empty() => bytes,
         Ok(_) => {
-            warn!(target: "book_manager", path = %cover_path.display(), "书籍封面为空，跳过有声书 cover.jpg 导出");
+            warn!(target: "book_manager", path = %cover_path.display(), "Обложка книги пуста — экспорт cover.jpg для аудиокниги пропущен");
             return;
         }
         Err(e) => {
-            warn!(target: "book_manager", path = %cover_path.display(), error = ?e, "读取书籍封面失败，跳过有声书 cover.jpg 导出");
+            warn!(target: "book_manager", path = %cover_path.display(), error = ?e, "Не удалось прочитать обложку — экспорт cover.jpg для аудиокниги пропущен");
             return;
         }
     };
@@ -209,7 +209,7 @@ fn export_audiobook_cover(book_folder: &Path, book_name: &str, audio_dir: &Path)
         match image_to_jpeg_bytes(&bytes) {
             Some(jpeg) => jpeg,
             None => {
-                warn!(target: "book_manager", path = %cover_path.display(), "书籍封面无法转为 JPEG，跳过有声书 cover.jpg 导出");
+                warn!(target: "book_manager", path = %cover_path.display(), "Не удалось преобразовать обложку в JPEG — экспорт cover.jpg для аудиокниги пропущен");
                 return;
             }
         }
@@ -217,15 +217,15 @@ fn export_audiobook_cover(book_folder: &Path, book_name: &str, audio_dir: &Path)
 
     let out_path = audio_dir.join("cover.jpg");
     if fs::read(&out_path).is_ok_and(|existing| existing == jpeg) {
-        info!(target: "book_manager", path = %out_path.display(), "有声书封面已存在，跳过导出");
+        info!(target: "book_manager", path = %out_path.display(), "Обложка аудиокниги уже есть — экспорт пропущен");
         return;
     }
 
     let tmp_path = audio_dir.join("cover.jpg.partial");
     match write_atomic(&out_path, &tmp_path, &jpeg) {
-        Ok(_) => info!(target: "book_manager", path = %out_path.display(), "有声书封面已导出"),
+        Ok(_) => info!(target: "book_manager", path = %out_path.display(), "Обложка аудиокниги экспортирована"),
         Err(e) => {
-            warn!(target: "book_manager", path = %out_path.display(), error = ?e, "写入有声书 cover.jpg 失败")
+            warn!(target: "book_manager", path = %out_path.display(), error = ?e, "Не удалось записать cover.jpg аудиокниги")
         }
     }
 }
@@ -344,10 +344,10 @@ struct WavParts<'a> {
 
 fn extract_wav_parts(bytes: &[u8]) -> std::result::Result<WavParts<'_>, String> {
     if bytes.len() < 12 {
-        return Err("文件头过短".to_string());
+        return Err("Слишком короткий заголовок файла".to_string());
     }
     if &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
-        return Err("不是 RIFF/WAVE 数据".to_string());
+        return Err("Это не данные RIFF/WAVE".to_string());
     }
 
     let mut fmt = None;
@@ -364,9 +364,9 @@ fn extract_wav_parts(bytes: &[u8]) -> std::result::Result<WavParts<'_>, String> 
         let start = pos + 8;
         let end = start
             .checked_add(size)
-            .ok_or_else(|| "chunk 大小溢出".to_string())?;
+            .ok_or_else(|| "Переполнение размера chunk".to_string())?;
         if end > bytes.len() {
-            return Err("chunk 数据不完整".to_string());
+            return Err("Неполные данные chunk".to_string());
         }
 
         match id {
@@ -381,13 +381,13 @@ fn extract_wav_parts(bytes: &[u8]) -> std::result::Result<WavParts<'_>, String> 
         }
     }
 
-    let fmt = fmt.ok_or_else(|| "缺少 fmt chunk".to_string())?;
-    let data = data.ok_or_else(|| "缺少 data chunk".to_string())?;
+    let fmt = fmt.ok_or_else(|| "Отсутствует fmt chunk".to_string())?;
+    let data = data.ok_or_else(|| "Отсутствует data chunk".to_string())?;
     Ok(WavParts { fmt, data })
 }
 
 fn push_u32_le(out: &mut Vec<u8>, value: usize, what: &str) -> std::result::Result<(), String> {
-    let value = u32::try_from(value).map_err(|_| format!("{what} 超出 WAV 4GiB 限制"))?;
+    let value = u32::try_from(value).map_err(|_| format!("{what} превышает лимит WAV 4 ГиБ"))?;
     out.extend_from_slice(&value.to_le_bytes());
     Ok(())
 }
@@ -398,22 +398,22 @@ fn build_wav(fmt: &[u8], data: &[u8]) -> std::result::Result<Vec<u8>, String> {
     let riff_size = 4usize
         .checked_add(8 + fmt.len() + fmt_pad)
         .and_then(|v| v.checked_add(8 + data.len() + data_pad))
-        .ok_or_else(|| "WAV 大小溢出".to_string())?;
+        .ok_or_else(|| "Переполнение размера WAV".to_string())?;
 
     let mut out = Vec::with_capacity(8 + riff_size);
     out.extend_from_slice(b"RIFF");
-    push_u32_le(&mut out, riff_size, "RIFF 大小")?;
+    push_u32_le(&mut out, riff_size, "размер RIFF")?;
     out.extend_from_slice(b"WAVE");
 
     out.extend_from_slice(b"fmt ");
-    push_u32_le(&mut out, fmt.len(), "fmt chunk 大小")?;
+    push_u32_le(&mut out, fmt.len(), "размер fmt chunk")?;
     out.extend_from_slice(fmt);
     if fmt_pad == 1 {
         out.push(0);
     }
 
     out.extend_from_slice(b"data");
-    push_u32_le(&mut out, data.len(), "data chunk 大小")?;
+    push_u32_le(&mut out, data.len(), "размер data chunk")?;
     out.extend_from_slice(data);
     if data_pad == 1 {
         out.push(0);
@@ -428,10 +428,10 @@ fn concatenate_wav_chunks(chunks: Vec<Vec<u8>>) -> std::result::Result<Vec<u8>, 
 
     for (idx, chunk) in chunks.iter().enumerate() {
         let parts =
-            extract_wav_parts(chunk).map_err(|e| format!("第 {} 段 WAV 无效：{}", idx + 1, e))?;
+            extract_wav_parts(chunk).map_err(|e| format!("Сегмент WAV {} недействителен: {}", idx + 1, e))?;
         match fmt.as_deref() {
             Some(existing) if existing != parts.fmt => {
-                return Err(format!("第 {} 段 WAV 参数与前文不一致", idx + 1));
+                return Err(format!("Параметры сегмента WAV {} не совпадают с предыдущими", idx + 1));
             }
             Some(_) => {}
             None => fmt = Some(parts.fmt.to_vec()),
@@ -439,7 +439,7 @@ fn concatenate_wav_chunks(chunks: Vec<Vec<u8>>) -> std::result::Result<Vec<u8>, 
         data.extend_from_slice(parts.data);
     }
 
-    let fmt = fmt.ok_or_else(|| "没有可拼接的 WAV 数据".to_string())?;
+    let fmt = fmt.ok_or_else(|| "Нет данных WAV для склейки".to_string())?;
     build_wav(&fmt, &data)
 }
 
@@ -460,7 +460,7 @@ fn concatenate_audio_chunks(
 
     let total_len = chunks.iter().try_fold(0usize, |acc, chunk| {
         acc.checked_add(chunk.len())
-            .ok_or_else(|| "音频大小溢出".to_string())
+            .ok_or_else(|| "Переполнение размера аудио".to_string())
     })?;
     let mut out = Vec::with_capacity(total_len);
     for chunk in chunks {
@@ -496,18 +496,18 @@ where
     let mut audio_chunks = Vec::with_capacity(total);
     for (idx, chunk) in chunks.into_iter().enumerate() {
         if tts_cancelled(cancel) {
-            return Err("已取消".to_string());
+            return Err("Отменено".to_string());
         }
 
         let bytes = synthesize(&chunk)
-            .map_err(|e| format!("第 {}/{} 段合成失败：{}", idx + 1, total, e))?;
+            .map_err(|e| format!("Сбой синтеза сегмента {}/{}: {}", idx + 1, total, e))?;
         if bytes.is_empty() {
-            return Err(format!("第 {}/{} 段未返回音频", idx + 1, total));
+            return Err(format!("Сегмент {}/{} не вернул аудио", idx + 1, total));
         }
         audio_chunks.push(bytes);
     }
 
-    concatenate_audio_chunks(audio_format, audio_chunks).map_err(|e| format!("音频拼接失败：{}", e))
+    concatenate_audio_chunks(audio_format, audio_chunks).map_err(|e| format!("Ошибка склейки аудио: {}", e))
 }
 
 /// 将已下载章节内容转换为音频文件（使用 Edge TTS / Read Aloud）。
@@ -562,7 +562,7 @@ pub fn generate_audiobook(
     let pitch = {
         let raw = cfg.audiobook_pitch.trim();
         if raw.to_ascii_lowercase().ends_with("st") {
-            warn!(target: "book_manager", "[TTS] pitch 不支持 st 单位（当前实现仅支持 Hz），已忽略：{}", raw);
+            warn!(target: "book_manager", "[TTS] единица pitch «st» не поддерживается (только Hz), проигнорировано: {}", raw);
             0
         } else {
             parse_pitch_hz_i32(raw)
@@ -575,7 +575,7 @@ pub fn generate_audiobook(
     } else {
         let f = cfg.audiobook_format.trim().to_ascii_lowercase();
         if f != "mp3" && f != "wav" {
-            warn!(target: "book_manager", "[TTS] 音频格式 {} 不受支持，已回退为 mp3", f);
+            warn!(target: "book_manager", "[TTS] формат аудио {} не поддерживается, откат к mp3", f);
         }
     }
 
@@ -637,7 +637,7 @@ pub fn generate_audiobook(
             chapter
                 .get("title")
                 .and_then(|v| v.as_str())
-                .unwrap_or("章节")
+                .unwrap_or("Глава")
                 .to_string()
         };
 
@@ -676,12 +676,12 @@ pub fn generate_audiobook(
     }
 
     if total_work == 0 {
-        info!(target: "book_manager", "无可用章节内容，跳过有声小说生成");
+        info!(target: "book_manager", "Нет доступного содержимого глав — генерация аудиокниги пропущена");
         return true;
     }
 
     if jobs.is_empty() {
-        info!(target: "book_manager", "有声小说音频均已存在，跳过生成：{}", audio_dir.display());
+        info!(target: "book_manager", "Аудиофайлы уже существуют — генерация пропущена: {}", audio_dir.display());
         return true;
     }
 
@@ -690,7 +690,7 @@ pub fn generate_audiobook(
 
     info!(
         target: "book_manager",
-        "开始生成有声小说：待生成={}，已跳过={} -> {}，并发={}",
+        "Начинаю генерацию аудиокниги: к созданию={}, пропущено={} -> {}, параллельность={}",
         jobs.len(),
         skipped_existing,
         audio_dir.display(),
@@ -719,17 +719,17 @@ pub fn generate_audiobook(
             }
         }
         if !ok {
-            error!(target: "book_manager", "[TTS] 无法连接到语音服务（msedge-tts / native 均失败）");
+            error!(target: "book_manager", "[TTS] не удалось подключиться к голосовому сервису (msedge-tts и native не сработали)");
             return false;
         }
     }
 
     let (pb, owns_bar) = if let Some(existing) = bar {
-        existing.set_prefix("有声书");
+        existing.set_prefix("Аудиокнига");
         existing.set_length(total_work as u64);
         existing.set_position(skipped_existing as u64);
         if skipped_existing > 0 {
-            existing.set_message(format!("已跳过 {} 章", skipped_existing));
+            existing.set_message(format!("Пропущено глав: {}", skipped_existing));
         } else {
             existing.set_message("");
         }
@@ -746,10 +746,10 @@ pub fn generate_audiobook(
             .unwrap()
             .progress_chars("=>-");
         pb.set_style(style);
-        pb.set_prefix("有声书");
+        pb.set_prefix("Аудиокнига");
         pb.set_position(skipped_existing as u64);
         if skipped_existing > 0 {
-            pb.set_message(format!("已跳过 {} 章", skipped_existing));
+            pb.set_message(format!("Пропущено глав: {}", skipped_existing));
         }
         (pb, true)
     };
@@ -841,7 +841,7 @@ pub fn generate_audiobook(
                 let chunks = split_tts_text(&job.text);
                 if chunks.len() > 1 {
                     pb.println(format!(
-                        "[TTS] 章节 {}《{}》文本较长，拆分为 {} 段合成",
+                        "[TTS] глава {} «{}»: длинный текст, разбит на {} сегментов",
                         job.idx,
                         job.title,
                         chunks.len()
@@ -871,7 +871,7 @@ pub fn generate_audiobook(
                         if let Err(e) = write_atomic(&job.out_path, &job.tmp_path, &bytes) {
                             errors.fetch_add(1, Ordering::Relaxed);
                             pb.println(format!(
-                                "[TTS] 章节 {}《{}》写入失败：{}",
+                                "[TTS] глава {} «{}»: ошибка записи: {}",
                                 job.idx, job.title, e
                             ));
                         } else {
@@ -881,7 +881,7 @@ pub fn generate_audiobook(
                     Err(e) => {
                         errors.fetch_add(1, Ordering::Relaxed);
                         pb.println(format!(
-                            "[TTS] 章节 {}《{}》生成失败：{}",
+                            "[TTS] глава {} «{}»: ошибка генерации: {}",
                             job.idx, job.title, e
                         ));
                     }
@@ -927,7 +927,7 @@ pub fn generate_audiobook(
     if err_cnt > 0 {
         warn!(
             target: "book_manager",
-            "有声小说生成完成（生成 {} 章，跳过 {} 章，失败 {} 章）：{}",
+            "Генерация аудиокниги завершена (создано {}, пропущено {}, ошибок {}): {}",
             generated_cnt,
             skipped_existing,
             err_cnt,
@@ -936,7 +936,7 @@ pub fn generate_audiobook(
     } else {
         info!(
             target: "book_manager",
-            "有声小说生成完成（生成 {} 章，跳过 {} 章）：{}",
+            "Генерация аудиокниги завершена (создано {}, пропущено {}): {}",
             generated_cnt,
             skipped_existing,
             audio_dir.display()

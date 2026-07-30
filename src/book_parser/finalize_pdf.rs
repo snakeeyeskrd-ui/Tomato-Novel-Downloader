@@ -129,11 +129,11 @@ pub(super) fn finalize_pdf(
     let font_path = manager
         .config
         .resolve_pdf_font_path()
-        .ok_or_else(|| anyhow::anyhow!("未找到可用的中文字体，请在配置中设置 pdf_font_path"))?;
+        .ok_or_else(|| anyhow::anyhow!("Не найден подходящий CJK-шрифт. Укажите pdf_font_path в настройках"))?;
 
     debug!(target: "finalize_pdf", font = %font_path.display(), "loading font");
     let font_data = FontData::new(std::fs::read(&font_path)?, None)
-        .map_err(|e| anyhow::anyhow!("加载字体失败: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("Не удалось загрузить шрифт: {e}"))?;
 
     let font_family = genpdf::fonts::FontFamily {
         regular: font_data.clone(),
@@ -218,29 +218,29 @@ pub(super) fn finalize_pdf(
     doc.push(Break::new(1));
 
     if !manager.author.trim().is_empty() {
-        doc.push(Paragraph::new(format!("作者：{}", manager.author)).styled(meta_style));
+        doc.push(Paragraph::new(format!("Автор: {}", manager.author)).styled(meta_style));
     }
 
     let status_text = match manager.finished {
-        Some(true) => "完结",
-        Some(false) => "连载",
-        None => "未知",
+        Some(true) => "Завершена",
+        Some(false) => "Продолжается",
+        None => "Неизвестно",
     };
-    doc.push(Paragraph::new(format!("状态：{status_text}")).styled(meta_style));
+    doc.push(Paragraph::new(format!("Статус: {status_text}")).styled(meta_style));
 
     if let Some(category) = manager.category.as_deref()
         && !category.trim().is_empty()
     {
-        doc.push(Paragraph::new(format!("分类：{}", category.trim())).styled(meta_style));
+        doc.push(Paragraph::new(format!("Жанр: {}", category.trim())).styled(meta_style));
     }
 
     if !manager.tags.trim().is_empty() {
-        doc.push(Paragraph::new(format!("标签：{}", manager.tags)).styled(meta_style));
+        doc.push(Paragraph::new(format!("Теги: {}", manager.tags)).styled(meta_style));
     }
 
     if !manager.description.trim().is_empty() {
         doc.push(Break::new(1));
-        doc.push(Paragraph::new("简介：").styled(meta_style));
+        doc.push(Paragraph::new("Описание:").styled(meta_style));
         // 先按换行符拆分，再对每小段做视觉宽度预分行
         for sub_line in manager.description.trim().lines() {
             let sub_line = sub_line.trim();
@@ -266,7 +266,7 @@ pub(super) fn finalize_pdf(
 
     for ch in chapters {
         let chapter_id = ch.get("id").and_then(|v| v.as_str()).unwrap_or("");
-        let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("章节");
+        let title = ch.get("title").and_then(|v| v.as_str()).unwrap_or("Глава");
         let content = ch.get("content").and_then(|v| v.as_str()).unwrap_or("");
         let content = ContentParser::clean_plain(content, title);
 
@@ -314,7 +314,7 @@ pub(super) fn finalize_pdf(
 
     // ── 渲染输出 ──────────────────────────────────────────────
     doc.render_to_file(path)
-        .map_err(|e| anyhow::anyhow!("PDF 渲染失败: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("Ошибка рендеринга PDF: {e}"))?;
 
     info!(target: "finalize_pdf", path = %path.display(), "PDF generated");
     Ok(())
