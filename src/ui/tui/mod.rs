@@ -1685,7 +1685,7 @@ fn poll_worker(app: &mut App) -> Result<()> {
 
 pub(super) fn format_word_count(words: usize) -> String {
     if words >= 10_000 {
-        format!("{:.1} тыс. знаков", words as f64 / 10_000.0)
+        format!("{:.1} тыс. знаков", words as f64 / 1_000.0)
     } else {
         format!("{} знаков", words)
     }
